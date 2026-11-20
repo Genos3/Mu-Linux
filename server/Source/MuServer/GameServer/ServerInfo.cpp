@@ -1687,7 +1687,7 @@ void CServerInfo::ReadCommonInfo(const char* section, const char* path)
 
 	this->m_ExperienceExponent = GetPrivateProfileDouble(section, "ExperienceExponent", 3.0, path);
 
-	this->m_ExperienceExponent = ((this->m_ExperienceExponent < 1.0) ? 1.0 : ((this->m_ExperienceExponent > 3.0) ? 3.0 : this->m_ExperienceExponent));
+	this->m_ExperienceExponent = ((this->m_ExperienceExponent < 2.0) ? 2.0 : ((this->m_ExperienceExponent > 3.0) ? 3.0 : this->m_ExperienceExponent));
 
 	this->m_MaxLevelUp = GetPrivateProfileInt(section, "MaxLevelUp", 0, path);
 
