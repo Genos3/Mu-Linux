@@ -1,6 +1,7 @@
 // Scene_OpenWorld.cpp
 
 #include "stdafx.h"
+#include <cstdlib>
 #include "Game/RenderFxSnapshots.h"
 #include "globals.h"
 #include "functions.h"
@@ -63,11 +64,18 @@ void __cdecl OpenWorld(void) {
         OpenTerrainAttribute(local_40);     // OpenTerrainAttribute(FileName)
     }
 
-    crt_sprintf(local_40, "Data/%s/EncTerrain%d.obj", world_name, iVar2);
-    OpenObjectsEnc(local_40);     // OpenObjectsEnc
+    // Debug viewer: PC has no .smd world props, so rendering eager map objects
+    // dereferences null models. Skip objects; terrain/water are enough for the
+    // DC-vs-PC visual comparison.
+    if (!std::getenv("MU_TEST_SCENE")) {
+        crt_sprintf(local_40, "Data/%s/EncTerrain%d.obj", world_name, iVar2);
+        OpenObjectsEnc(local_40);     // OpenObjectsEnc
+    }
 
     uVar1 = g_tex_ext_mode;
-    if (InGameModeFlag != '\0') g_tex_ext_mode = 0;
+    // Debug viewer (MU_TEST_SCENE) keeps mode 1 (Data/) so .OZB/.OZJ textures
+    // resolve; mode 0 points at the non-existent Data2/ directory.
+    if (InGameModeFlag != '\0' && !std::getenv("MU_TEST_SCENE")) g_tex_ext_mode = 0;
 
     // Desviación: los archivos reales son OZ* (encriptados), no .bmp/.jpg/.tga, y
     // OpenJPG sólo cambia la extensión si g_tex_ext_mode != 0 (in-game vale 0): se

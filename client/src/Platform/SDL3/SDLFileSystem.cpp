@@ -116,8 +116,16 @@ class SDLFileSystem final : public IFileSystem {
 public:
     FILE* Open(const char* path, const char* mode) override {
         const auto resolved = Resolve(path, mode && (std::strchr(mode, 'w') || std::strchr(mode, 'a')));
-        if (resolved.empty()) return nullptr;
-        return std::fopen(resolved.string().c_str(), mode);
+        if (resolved.empty()) {
+            std::fprintf(stderr, "FSFAIL: unresolved cwd=%s path=%s\n",
+                         std::filesystem::current_path().string().c_str(), path);
+            return nullptr;
+        }
+        FILE* f = std::fopen(resolved.string().c_str(), mode);
+        if (!f) std::fprintf(stderr, "FSFAIL: fopen cwd=%s path=%s resolved=%s\n",
+                             std::filesystem::current_path().string().c_str(), path,
+                             resolved.string().c_str());
+        return f;
     }
     bool EnsureDirectory(const char* path) override {
 #ifdef _WIN32

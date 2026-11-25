@@ -5,7 +5,15 @@ namespace Platform {
 namespace {
 class Win32FileSystem final : public IFileSystem {
 public:
-    FILE* Open(const char* path, const char* mode) override { return fopen(path, mode); }
+    FILE* Open(const char* path, const char* mode) override {
+        FILE* f = fopen(path, mode);
+        if (!f) {
+            char cwd[MAX_PATH] = {};
+            GetCurrentDirectoryA(sizeof(cwd), cwd);
+            fprintf(stderr, "FSFAIL: cwd=%s path=%s\n", cwd, path);
+        }
+        return f;
+    }
     bool SetWorkingDirectory(const char* path) override { return SetCurrentDirectoryA(path) != FALSE; }
     uint32_t WorkingDirectory(uint32_t capacity, char* output) override {
         return GetCurrentDirectoryA(capacity, output);
