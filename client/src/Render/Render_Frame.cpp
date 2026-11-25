@@ -206,6 +206,7 @@
 //   TestFrustrum2D  → Frustum_IsVisible(x, y, z)   — world→screen cull check
 
 #include "stdafx.h"
+#include <cstdlib>
 #include "UI/ChatListBox.h"
 #include "Render/Gfx.h"
 #include "Render/RenderProfile.h"
@@ -566,6 +567,18 @@ void Render_Scene3D(void)
         camPos[0] = *(float*)(hero + 0x10);
         camPos[1] = *(float*)(hero + 0x14);
         camPos[2] = *(float*)(hero + 0x18);
+        // MU_TEST_SCENE bypass: PrepareCamera()/MoveMainCamera() never run
+        // (Simulation_PrepareStep returns early), leaving stale camera globals.
+        // Set the same values the real game would for a hero at this position,
+        // matching the DC test scene for side-by-side comparison.
+        if (std::getenv("MU_TEST_SCENE")) {
+            CameraPosition[0] = camPos[0];
+            CameraPosition[1] = camPos[1] - 1000.0f;
+            CameraPosition[2] = 850.0f;
+            CameraAngle[0] = -48.5f;
+            CameraAngle[1] = 0.0f;
+            CameraAngle[2] = 0.0f;
+        }
     } else {
         camPos[0] = camPos[1] = camPos[2] = 0.0f;
     }
