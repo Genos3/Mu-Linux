@@ -64,13 +64,8 @@ void __cdecl OpenWorld(void) {
         OpenTerrainAttribute(local_40);     // OpenTerrainAttribute(FileName)
     }
 
-    // Debug viewer: PC has no .smd world props, so rendering eager map objects
-    // dereferences null models. Skip objects; terrain/water are enough for the
-    // DC-vs-PC visual comparison.
-    if (!std::getenv("MU_TEST_SCENE")) {
-        crt_sprintf(local_40, "Data/%s/EncTerrain%d.obj", world_name, iVar2);
-        OpenObjectsEnc(local_40);     // OpenObjectsEnc
-    }
+    crt_sprintf(local_40, "Data/%s/EncTerrain%d.obj", world_name, iVar2);
+    OpenObjectsEnc(local_40);     // OpenObjectsEnc
 
     uVar1 = g_tex_ext_mode;
     // Debug viewer (MU_TEST_SCENE) keeps mode 1 (Data/) so .OZB/.OZJ textures

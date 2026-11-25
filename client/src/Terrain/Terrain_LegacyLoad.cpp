@@ -255,11 +255,12 @@ void __cdecl OpenWorldModels(void) {
         const bool testScene = std::getenv("MU_TEST_SCENE") != nullptr;
         if (!testScene) g_tex_ext_mode = '\0';
         gMapManager.SetCurrentMap(testScene ? 0 : 7);
-        // World-specific .smd props are not shipped, so OpenModel() below is a
-        // no-op and the Actions[] fixups would write through null pointers.
-        // The map viewer only needs terrain + Object1 models, so skip props
-        // (in both the legacy Atlans bypass and the MU_TEST_SCENE viewer).
-        return;
+        // Legacy Atlans bypass: world-specific .smd props are not shipped and
+        // the Actions[] fixups would write through null pointers, so skip.
+        // MU_TEST_SCENE uses Lorencia (map 0), whose Object1 models are loaded
+        // by the normal AccessModel/OpenTexture path below — keep going so the
+        // map objects have geometry.
+        if (!testScene) return;
     }
 
     OpenJPG("Object8/drop01.jpg", 0x4d9, 0x2600, 0x2900, 0, '\x01');
