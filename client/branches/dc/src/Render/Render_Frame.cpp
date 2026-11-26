@@ -570,20 +570,29 @@ void Render_Scene3D(void)
         if (((WORD)Platform::GetInput().KeyState(VK_DOWN) >> 8) == 0x80)  testCamY -= step;
         if (((WORD)Platform::GetInput().KeyState(VK_LEFT) >> 8) == 0x80)  testCamX -= step;
         if (((WORD)Platform::GetInput().KeyState(VK_RIGHT) >> 8) == 0x80) testCamX += step;
+        // START resets the test camera to the canonical Lorencia spawn.
+        if (((WORD)Platform::GetInput().KeyState(VK_TAB) >> 8) == 0x80) {
+            testCamX = 12550.0f; testCamY = 12550.0f;
+        }
         camPos[0] = testCamX;
         camPos[1] = testCamY;
-        camPos[2] = 850.0f;
-        // Match MoveMainCamera() exactly so DC and PC show the same view:
-        //   eye = hero + rotate((0,-1000,0), yaw=0) = (x, y-1000, z+1000-150)
-        //   CameraAngle = (EarthQuake - pitch(48.5), 0, 0)
-        // Previously we put the eye directly above the hero with angles (0,0,0),
-        // so the view had no pitch and looked into a wall instead of the map.
-        CameraPosition[0] = testCamX;
-        CameraPosition[1] = testCamY - 1000.0f;
-        CameraPosition[2] = camPos[2];
+        // Exact MoveMainCamera() math, matching the PC viewer. Use the hero's
+        // real world Z instead of a hardcoded 850, and rotate the eye offset
+        // by the -45 deg yaw set on entering the game (same AngleMatrix /
+        // VectorIRotate calls as the PC test viewer).
+        camPos[2] = Hero ? *(float*)((BYTE*)Hero + 24) : 0.0f;
+        float camAngles[3] = { 0.0f, 0.0f, -45.0f };
+        float rot[3][4];
+        AngleMatrix(camAngles, rot);
+        float eyeOffset[3];
+        float inEye[3] = { 0.0f, -1000.0f, 0.0f };
+        VectorIRotate(inEye, rot, eyeOffset);
+        CameraPosition[0] = camPos[0] + eyeOffset[0];
+        CameraPosition[1] = camPos[1] + eyeOffset[1];
+        CameraPosition[2] = camPos[2] + 1000.0f - 150.0f;
         CameraAngle[0] = -48.5f;
         CameraAngle[1] = 0.0f;
-        CameraAngle[2] = 0.0f;
+        CameraAngle[2] = -45.0f;
         // Normal gameplay derives HeroTile from the terrain layer under the
         // hero; Player_InputTick does not run in the test scene, so set it here
         // (tile 4 = tavern floor hides roof objects 125/126, as on PC).

@@ -343,5 +343,24 @@ LAB_00513b4e:
         HashTable_Insert(&MAIN_HASH_CLASS, pvVar5, puVar1);
     }
     *puVar1 = 0xd9;
+
+    // Same as the PC viewer: the anti-tamper block above writes through
+    // &PositionX/Y, scrambling the spawn grid. Re-apply it last so the hero
+    // starts on its real tile for click-to-move / pathfinding.
+    if (TestSceneMapId >= 0 && local_8) {
+        const int gx = (int)(spawnX * 0.01f), gy = (int)(spawnY * 0.01f);
+        AsCharacter(local_8)->PositionX = gx;
+        AsCharacter(local_8)->PositionY = gy;
+        AsCharacter(local_8)->TargetX = gx;
+        AsCharacter(local_8)->TargetY = gy;
+        AsCharacter(local_8)->JumpTime = 0;
+        AsCharacter(local_8)->PathCurrent = 0;
+        AsCharacter(local_8)->PathSubstep = 0;
+        AsCharacter(local_8)->PathNum = 0;
+        AsCharacter(local_8)->Object.CurrentAction = 1;
+        AsCharacter(local_8)->Object.PriorAction = 1;
+        AsCharacter(local_8)->Object.AnimationFrame = 0.0f;
+        AsCharacter(local_8)->Object.Kind = 1;
+    }
     MU_TRACE("INTRO: exit -> SceneFlag=%d", SceneFlag);
 }

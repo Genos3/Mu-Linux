@@ -49,6 +49,7 @@ public:
     {
         prevHeld = held;
         held.fill(false);
+        int stickX = 0, stickY = 0;
 
         // --- controller ---
         if (maple_device_t* dev = maple_enum_type(0, MAPLE_FUNC_CONTROLLER)) {
@@ -65,7 +66,9 @@ public:
                                         held[kBtnUp], held[kBtnDown], held[kBtnLeft], held[kBtnRight]);
                     }
                 }
+                stickX = st->joyx; stickY = st->joyy;   // analog, -128..127
                 held[kVkEnter] = (st->buttons & CONT_A) != 0;
+                held[0x01]     = (st->buttons & CONT_A) != 0;   // VK_LBUTTON (click/move)
                 held[kVkEscape] = (st->buttons & CONT_B) != 0;
                 held[0x10] = (st->buttons & CONT_C) != 0;    // VK_SHIFT
                 held[0x09] = (st->buttons & CONT_START) != 0;// VK_TAB
@@ -82,12 +85,19 @@ public:
                 mouseX_ += st->dx; mouseY_ += st->dy;
                 if (mouseX_ < 0) mouseX_ = 0; if (mouseX_ > 639) mouseX_ = 639;
                 if (mouseY_ < 0) mouseY_ = 0; if (mouseY_ > 479) mouseY_ = 479;
-                held[0x01] = (st->buttons & MOUSE_LEFTBUTTON) != 0;   // VK_LBUTTON
+                held[0x01] |= (st->buttons & MOUSE_LEFTBUTTON) != 0;  // VK_LBUTTON
                 held[0x02] = (st->buttons & MOUSE_RIGHTBUTTON) != 0;  // VK_RBUTTON
                 held[0x04] = (st->buttons & MOUSE_MIDDLEBUTTON) != 0; // VK_MBUTTON
             }
             break;
         }
+
+        // Analog stick always moves the cursor too, alongside any mouse.
+        // Scale down the -128..127 range so a full tilt is a usable sweep.
+        mouseX_ += stickX / 24;
+        mouseY_ += stickY / 24;
+        if (mouseX_ < 0) mouseX_ = 0; if (mouseX_ > 639) mouseX_ = 639;
+        if (mouseY_ < 0) mouseY_ = 0; if (mouseY_ > 479) mouseY_ = 479;
 
         // --- keyboard (any maple port) ---
         for (int port = 0; port < 4; ++port) {

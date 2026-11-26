@@ -11,6 +11,7 @@
 
 #include "Render/Backend/Api.h"
 #include "Render/Backend/GfxDevice.h"
+#include "Render/Gfx.h"
 #include "Render/RenderState.h"
 #include "Render/TerrainDraw.h"
 #include "Render/RenderBackend.h"
@@ -52,6 +53,8 @@ struct Tex {
 Tex g_textures[kMaxTextures];
 Gfx::Texture g_bound = 0;
 bool g_blend = false, g_alphaTest = false, g_textureEnabled = true;
+Gfx::Factor g_blendSrc = Gfx::Factor::SrcAlpha;
+Gfx::Factor g_blendDst = Gfx::Factor::OneMinusSrcAlpha;
 bool g_depthTest = true;   // game toggles this: 3D on, 2D UI off
 float g_clear[4] = {0, 0, 0, 1};
 bool g_sceneOpen = false;
@@ -78,11 +81,35 @@ int Pow2(int v)
     while (n < v && n < 1024) n <<= 1;
     return n;
 }
+pvr_blend_mode_t ToPvrBlend(Gfx::Factor f)
+{
+    // PVR2 exposes only 8 factors. The src-color variants have no direct
+    // hardware equivalent; approximate them rather than leaving them unset.
+    switch (f) {
+    case Gfx::Factor::Zero:                return PVR_BLEND_ZERO;
+    case Gfx::Factor::One:                 return PVR_BLEND_ONE;
+    case Gfx::Factor::SrcColor:            return PVR_BLEND_ONE;
+    case Gfx::Factor::OneMinusSrcColor:    return PVR_BLEND_ZERO;
+    case Gfx::Factor::SrcAlpha:            return PVR_BLEND_SRCALPHA;
+    case Gfx::Factor::OneMinusSrcAlpha:    return PVR_BLEND_INVSRCALPHA;
+    case Gfx::Factor::DstAlpha:            return PVR_BLEND_DESTALPHA;
+    case Gfx::Factor::OneMinusDstAlpha:    return PVR_BLEND_INVDESTALPHA;
+    case Gfx::Factor::DstColor:            return PVR_BLEND_DESTCOLOR;
+    case Gfx::Factor::OneMinusDstColor:    return PVR_BLEND_INVDESTCOLOR;
+    case Gfx::Factor::SrcAlphaSaturate:    return PVR_BLEND_SRCALPHA;
+    }
+    return PVR_BLEND_ONE;
+}
 struct Batch {
     pvr_poly_hdr_t hdr;
     std::vector<pvr_vertex_t> verts;
 };
 std::vector<Batch> g_opaque, g_translucent;
+// Reuse small Batch objects across frames to cut per-frame allocation churn.
+// Bounded: retaining the large terrain buffers permanently OOMs the DC heap.
+constexpr std::size_t kPoolMaxBatches = 64;
+constexpr std::size_t kPoolMaxVerts = 256;
+std::vector<Batch> g_batchPool;
 bool s_wrapUv = false;   // set per Submit: wrap tile-space terrain UVs only
 void Emit(std::vector<pvr_vertex_t>& out, const float* xyz, const float* uv, uint32_t argb, bool eol)
 {
@@ -111,7 +138,14 @@ void FlushList(pvr_list_t list, std::vector<Batch>& batches)
         for (const pvr_vertex_t& v : batch.verts) pvr_prim(&v, sizeof(v));
     }
     pvr_list_finish();
-    batches.clear();
+    // Recycle only small batches; large terrain buffers are freed instead of
+    // retained permanently (the DC heap cannot afford ~1.6 MB of pinned buffers).
+    while (!batches.empty()) {
+        Batch& b = batches.back();
+        if (g_batchPool.size() < kPoolMaxBatches && b.verts.capacity() <= kPoolMaxVerts)
+            g_batchPool.push_back(std::move(b));
+        batches.pop_back();   // frees the buffer unless it was moved into the pool
+    }
 }
 } // namespace
 
@@ -221,7 +255,11 @@ extern "C" bool DCPVR_LoadDT(const char* path, unsigned* outHandle, int* outW, i
 
 // --- GfxDevice -----------------------------------------------------------
 namespace GfxDevice { namespace GL {
-void Reset() { g_bound = 0; g_blend = false; g_alphaTest = false; g_textureEnabled = true; g_depthTest = true; }
+void Reset() {
+    g_bound = 0; g_blend = false; g_alphaTest = false; g_textureEnabled = true; g_depthTest = true;
+    g_blendSrc = Gfx::Factor::SrcAlpha;
+    g_blendDst = Gfx::Factor::OneMinusSrcAlpha;
+}
 void ApplyCap(Gfx::Cap cap, bool on)
 {
     if (cap == Gfx::Cap::Blend) g_blend = on;
@@ -231,6 +269,8 @@ void ApplyCap(Gfx::Cap cap, bool on)
 }
 void ApplyBlend(Gfx::Factor source, Gfx::Factor destination)
 {
+    g_blendSrc = source;
+    g_blendDst = destination;
     g_blend = !(source == Gfx::Factor::One && destination == Gfx::Factor::Zero);
 }
 void ApplyDepthFunc(Gfx::Compare) {}
@@ -298,16 +338,21 @@ void TexImage2D(int components, int width, int height, Gfx::Format format, const
     const bool hasAlpha = format == Gfx::Format::RGBA && components == 4;
     bool useAlpha = false;
     if (hasAlpha) {
-        for (int i = 3; i < w * h * bpp; i += bpp) {
+        // Only scan the source pixels: the PVR padding is not in `pixels`.
+        for (std::size_t i = 3; i < (std::size_t)width * height * bpp; i += bpp) {
             if (src[i] != 255) { useAlpha = true; break; }
         }
     }
     tex.fmt = useAlpha ? PVR_TXRFMT_ARGB4444 : PVR_TXRFMT_RGB565;
-    std::vector<uint16_t> converted(static_cast<std::size_t>(w) * h);
-    for (int i = 0; i < w * h; ++i) {
-        const unsigned char r = src[i * bpp + 0], g = src[i * bpp + 1], b = src[i * bpp + 2];
-        const unsigned char a = hasAlpha ? src[i * bpp + 3] : 255;
-        converted[i] = useAlpha ? Pack4444(r, g, b, a) : Pack565(r, g, b);
+    // PVR needs power-of-two dimensions; zero-fill the padding cells instead
+    // of reading past the end of a non-power-of-two source buffer.
+    std::vector<uint16_t> converted(static_cast<std::size_t>(w) * h, 0);
+    for (int row = 0; row < height; ++row) {
+        for (int col = 0; col < width; ++col) {
+            const unsigned char* s = src + ((std::size_t)row * width + col) * bpp;
+            converted[(std::size_t)row * w + col] =
+                useAlpha ? Pack4444(s[0], s[1], s[2], s[3]) : Pack565(s[0], s[1], s[2]);
+        }
     }
     tex.ptr = pvr_mem_malloc(converted.size() * sizeof(uint16_t));
     if (!tex.ptr) {
@@ -406,8 +451,10 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
     cxt.blend.src_enable = translucent;
     cxt.blend.dst_enable = translucent;
     if (translucent) {
-        cxt.blend.src = PVR_BLEND_SRCALPHA;
-        cxt.blend.dst = PVR_BLEND_INVSRCALPHA;
+        // Honour the blend factors the game selected (e.g. additive SrcAlpha/One)
+        // instead of forcing the standard alpha blend for every translucent draw.
+        cxt.blend.src = ToPvrBlend(g_blendSrc);
+        cxt.blend.dst = ToPvrBlend(g_blendDst);
     }
     // Use the real Z buffer for 3D (game has depth test enabled); for 2D UI
     // the game disables it - use DEPTHCMP_ALWAYS so the TA's sort is harmless.
@@ -438,6 +485,11 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
     }
 
     Batch batch;
+    if (!g_batchPool.empty()) {
+        batch = std::move(g_batchPool.back());
+        g_batchPool.pop_back();
+        batch.verts.clear();          // keep the allocated capacity
+    }
     batch.hdr = hdr;
 
     // The GL backend transforms vertices in its vertex shader; the DC backend
@@ -461,7 +513,10 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
         out[2] = 1.0f - (cz/cw + 1.0f) * 0.5f;
     };
 
-    s_wrapUv = (TestSceneMapId >= 0 && count > 200);   // terrain batches only
+    // Floor tile-space UVs into [0,1) for large (terrain) batches. The floor is
+    // a no-op for UVs already in range, so misclassifying a large UI batch is
+    // harmless - unlike the old TestSceneMapId gate, this also works in real scenes.
+    s_wrapUv = count > 200;
     auto triangle = [&](const Vertex& a, const Vertex& b, const Vertex& c, bool eol) {
         float pa[3], pb[3], pc[3];
         project(a.position, pa); project(b.position, pb); project(c.position, pc);
