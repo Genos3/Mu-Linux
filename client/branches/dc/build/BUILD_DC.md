@@ -27,7 +27,9 @@ This:
 3. packs `mu_full.cdi` with the converted Data tree
 
 For source-only edits this one command is enough — no need to re-run
-`convert-assets.cmd`.
+`convert-assets.cmd`. The four Python fixups are skipped automatically when
+`dc_assets` is unchanged; they only re-run after `convert-assets.cmd` or an
+asset edit. The CDI repack itself still runs every time (~712 MB).
 
 ## Other commands
 
