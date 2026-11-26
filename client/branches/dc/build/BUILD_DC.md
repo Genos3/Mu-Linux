@@ -41,6 +41,20 @@ For source-only edits this one command is enough — no need to re-run
 
 `mu.elf`, `*.cdi`, `*.log` and generated folders are gitignored here.
 
+## Linux
+
+The same flow works from shell scripts:
+
+```
+export KOS_BASE=/path/to/KallistiOS       # default: $HOME/dreamsdk/kos
+export KOS_PORTS=/path/to/kos-ports       # default: $HOME/dreamsdk/kos-ports
+./convert_assets.sh                       # first time only
+./build_dc.sh converted                   # ELF + mu_full.cdi
+```
+
+The scripts create symlinks instead of Windows junctions. CDI packing needs
+either a native `mkdcdisc` on `PATH` or `wine` with `tools/mkdcdisc.exe`.
+
 ## Test scene
 
 The DC build is compiled with `MU_TEST_SCENE_MAP` (in `src\globals.cpp`), so it
