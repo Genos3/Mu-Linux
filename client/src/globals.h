@@ -858,6 +858,7 @@ extern DWORD   NpcVisiblePool;  // DAT_083a1378
 extern DWORD   RenderPoolB;  // DAT_083a2e92
 extern DWORD   WeatherModeState;  // DAT_083a3ff0
 extern char    InGameModeFlag;   // Scene_Intro: normal-path flag  // DAT_083a410c
+extern char    TestSceneMode;    // 1 = Lorencia test viewer (env var or Config.ini [Test])
 // MouseRayEndPointStorage — 3-DWORD storage para mouse-ray endpoint (Camera_MouseRay
 // escribe out_ray[0..2]). MouseRayEndPoint es referencia al [0].
 extern DWORD   MouseRayEndPointStorage[3];  // 3-DWORD storage for the mouse-pick ray endpoint (Camera_MouseRay)

@@ -43,6 +43,7 @@
 //     SetByte(0x0041EFB5, 0xEB);  // Crack gg init
 
 #include "stdafx.h"
+#include <cstdlib>
 #include "Platform/ClientSettings.h"
 #include "Platform/Text.h"
 #include "Platform/IFileSystem.h"
@@ -51,6 +52,7 @@
 #include "Config/ServerConfig.h"
 #include "Config/UserSettings.h"
 #include "Sound/SoundManager.h"
+#include "globals.h"
 
 extern "C" void DbgLogPublic(const char* msg);
 
@@ -134,6 +136,12 @@ int Config_Load(void)
     // `configPath` es el mismo archivo (en Windows "config.ini" y "Config.ini"
     // son el mismo nombre).
     gUserSettings.Load(configPath);
+    // [Test] TestScene=1 bypasses login and loads Lorencia directly (viewer).
+    {
+        char value[16] = {};
+        Platform::GetFileSystem().ReadIniString("Test", "TestScene", "0", value, sizeof(value), configPath);
+        if (std::atoi(value) != 0) { InGameModeFlag = 1; TestSceneMode = 1; }
+    }
     if (gUserSettings.GetEnableSound() >= 0) g_SoundOn    = (DWORD)gUserSettings.GetEnableSound();
     if (gUserSettings.GetEnableMusic() >= 0) gSound.SetMusicEnabled((DWORD)gUserSettings.GetEnableMusic());
     {

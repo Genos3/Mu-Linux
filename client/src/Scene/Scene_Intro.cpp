@@ -226,6 +226,11 @@ void __cdecl Scene_Intro(HDC param_1)
     // (anim_state 1) so the full body renders from the first frame.
     if (TestSceneMode && local_8) {
         const int gx = (int)(spawnX * 0.01f), gy = (int)(spawnY * 0.01f);
+        // CreateHero calls CreateCharacterPointer(...,0,0,...) so grid coords
+        // stay 0,0 while only Object.Position gets the world coords. The
+        // walker uses PositionX/Y (grid) and would start from the map corner.
+        AsCharacter(local_8)->PositionX = gx;
+        AsCharacter(local_8)->PositionY = gy;
         AsCharacter(local_8)->TargetX = gx;
         AsCharacter(local_8)->TargetY = gy;
         AsCharacter(local_8)->JumpTime = 0;
@@ -341,4 +346,15 @@ LAB_00513b4e:
         HashTable_Insert(&MAIN_HASH_CLASS, pvVar5, puVar1);
     }
     *puVar1 = 0xd9;
+
+    // The anti-tamper block above writes directly through &PositionX/Y
+    // (Packet_DecryptDword and the final *puVar1 = 0xd9), scrambling the grid
+    // coords. Re-apply them last so the walker starts at the spawn tile.
+    if (TestSceneMode && local_8) {
+        const int gx2 = (int)(spawnX * 0.01f), gy2 = (int)(spawnY * 0.01f);
+        AsCharacter(local_8)->PositionX = gx2;
+        AsCharacter(local_8)->PositionY = gy2;
+        AsCharacter(local_8)->TargetX = gx2;
+        AsCharacter(local_8)->TargetY = gy2;
+    }
 }

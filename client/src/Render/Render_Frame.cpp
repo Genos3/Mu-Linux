@@ -567,18 +567,25 @@ void Render_Scene3D(void)
         camPos[0] = *(float*)(hero + 0x10);
         camPos[1] = *(float*)(hero + 0x14);
         camPos[2] = *(float*)(hero + 0x18);
-        // MU_TEST_SCENE bypass: PrepareCamera()/MoveMainCamera() never run
+        // Test viewer: PrepareCamera()/MoveMainCamera() never run
         // (Simulation_PrepareStep returns early), leaving stale camera globals.
         // Set the same values the real game would for a hero at this position,
         // matching the DC test scene for side-by-side comparison.
-        if (std::getenv("MU_TEST_SCENE")) {
-            // Original in-game isometric camera: the real client sets
-            // CameraAngle[2] = -45 deg on entering the game, and rotates the
-            // (0,-1000,0) eye offset by that yaw -> (+707.1, -707.1, 0).
-            CameraPosition[0] = camPos[0] + 707.10678f;
-            CameraPosition[1] = camPos[1] - 707.10678f;
-            CameraPosition[2] = 850.0f;
-            CameraAngle[0] = -48.5f;
+        if (TestSceneMode) {
+            // Real MoveMainCamera() math (Render_WorldHelpers.cpp:1090), not
+            // the intro/login walk camera. Use the hero's actual world Z
+            // (camPos[2]); hardcoding 850 puts the eye too low on raised
+            // terrain so the view sits below the character.
+            float camAngles[3] = { 0.0f, 0.0f, -45.0f };  // yaw from char-select
+            float rot[3][4];
+            AngleMatrix(camAngles, rot);
+            float eyeOffset[3];
+            float in1[3] = { 0.0f, -1000.0f, 0.0f };
+            VectorIRotate(in1, rot, eyeOffset);
+            CameraPosition[0] = camPos[0] + eyeOffset[0];
+            CameraPosition[1] = camPos[1] + eyeOffset[1];
+            CameraPosition[2] = camPos[2] + 1000.0f - 150.0f;  // distance - height
+            CameraAngle[0] = -48.5f;   // EarthQuake - gCamera3D.GetPitch()
             CameraAngle[1] = 0.0f;
             CameraAngle[2] = -45.0f;
         }

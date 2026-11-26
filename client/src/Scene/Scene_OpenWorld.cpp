@@ -1,7 +1,6 @@
 // Scene_OpenWorld.cpp
 
 #include "stdafx.h"
-#include <cstdlib>
 #include "Game/RenderFxSnapshots.h"
 #include "globals.h"
 #include "functions.h"
@@ -68,9 +67,9 @@ void __cdecl OpenWorld(void) {
     OpenObjectsEnc(local_40);     // OpenObjectsEnc
 
     uVar1 = g_tex_ext_mode;
-    // Debug viewer (MU_TEST_SCENE) keeps mode 1 (Data/) so .OZB/.OZJ textures
+    // Test viewer keeps mode 1 (Data/) so .OZB/.OZJ textures
     // resolve; mode 0 points at the non-existent Data2/ directory.
-    if (InGameModeFlag != '\0' && !std::getenv("MU_TEST_SCENE")) g_tex_ext_mode = 0;
+    if (InGameModeFlag != '\0' && TestSceneMode == 0) g_tex_ext_mode = 0;
 
     // Desviación: los archivos reales son OZ* (encriptados), no .bmp/.jpg/.tga, y
     // OpenJPG sólo cambia la extensión si g_tex_ext_mode != 0 (in-game vale 0): se

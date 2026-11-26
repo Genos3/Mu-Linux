@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <cstdlib>
 // globals.cpp — Definitions for all DAT_ global variables.
 // In the original binary these are fixed addresses; here they are regular
 // zero-initialized globals that the linker places wherever it chooses.
@@ -905,9 +904,10 @@ SceneObjectCell g_ObjectBucketGrid[256] = {};
 DWORD    NpcVisiblePool  = 0;
 DWORD    RenderPoolB  = 0;
 DWORD    WeatherModeState  = 0;
-// MU_TEST_SCENE=1 bypasses login and loads the map directly (PC comparison
-// mode, mirrors the DC test scene). Host env vars work on PC, unlike on DC.
-char     InGameModeFlag  = (std::getenv("MU_TEST_SCENE") != nullptr) ? 1 : 0;
+// Set from Config.ini [Test] TestScene=1 during Config_Load. Bypasses login
+// and loads Lorencia directly (PC comparison mode).
+char     InGameModeFlag  = 0;
+char     TestSceneMode   = 0;
 // ── MouseRayEndPoint — mouse-ray endpoint world pos (3 floats) ───────────────────
 // En el binario original Camera_MouseRay (Camera_BuildMouseRay) escribe out_ray[0..2]
 // arrancando en 0x083a4110. Si se declara como UN único DWORD el linker no

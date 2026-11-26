@@ -1,7 +1,6 @@
 // Terrain_LegacyLoad.cpp
 
 #include "stdafx.h"
-#include <cstdlib>
 #include "Platform/Text.h"
 #include "Platform/IFileSystem.h"
 void __fastcall FUN_0045aaa0_impl(void *_this, char flags);
@@ -249,15 +248,15 @@ void __cdecl DeleteMonsters(void) {
 void __cdecl OpenWorldModels(void) {
     char cVar2 = g_tex_ext_mode;
     if (InGameModeFlag != '\0') {
-        // Debug bypass (MU_TEST_SCENE): keep g_tex_ext_mode == 1 (Data/) so
+        // Test viewer (Config.ini [Test]): keep g_tex_ext_mode == 1 (Data/) so
         // terrain/textures resolve; mode 0 points at the non-existent Data2/.
         // Use Lorencia (map 0) to match the DC test scene at grid 125,125.
-        const bool testScene = std::getenv("MU_TEST_SCENE") != nullptr;
+        const bool testScene = TestSceneMode != 0;
         if (!testScene) g_tex_ext_mode = '\0';
         gMapManager.SetCurrentMap(testScene ? 0 : 7);
         // Legacy Atlans bypass: world-specific .smd props are not shipped and
         // the Actions[] fixups would write through null pointers, so skip.
-        // MU_TEST_SCENE uses Lorencia (map 0), whose Object1 models are loaded
+        // The test viewer uses Lorencia (map 0), whose Object1 models load
         // by the normal AccessModel/OpenTexture path below — keep going so the
         // map objects have geometry.
         if (!testScene) return;
