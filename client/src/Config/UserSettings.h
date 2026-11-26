@@ -135,10 +135,10 @@ public:
     // DESVIACION: pack de texturas HD ([Window] HDTextures); se aplica al reiniciar.
     bool GetHDTextures() const { return m_HDTextures; }
     void SetHDTextures(bool enabled);
-    // DESVIACION: sombras proyectadas ([Window] Shadows): 0 apagadas (sombra
-    // plana del original), 1 suaves, 2 fuertes. Se aplica en caliente.
+    // [Window] Shadows: 0 off, 1 original flat shadow, 2 soft projected,
+    // 3 strong projected. Applied live.
     int GetShadows() const { return m_Shadows; }
-    float ShadowStrength() const { static const float strength[3] = { 0.0f, 0.35f, 0.55f }; return strength[m_Shadows]; }
+    float ShadowStrength() const { static const float strength[4] = { 0.0f, 0.0f, 0.35f, 0.55f }; return strength[m_Shadows]; }
     void SetShadows(int level);
     // DESVIACION: niebla por profundidad ([Window] DepthFog); en caliente.
     bool GetDepthFog() const { return m_DepthFog; }

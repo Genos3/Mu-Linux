@@ -138,7 +138,7 @@ bool CWindow::Create(HINSTANCE hInst, WNDPROC wndProc)
     Gfx::SetTextureQuality(gUserSettings.GetTextureQuality() >= 1, gUserSettings.GetTextureQuality() >= 2);
     Gfx::SetMultisample(gUserSettings.Multisample());
     Gfx::SetHDTextures(gUserSettings.GetHDTextures());
-    Gfx::SetShadowMaps(gUserSettings.GetShadows() > 0, gUserSettings.ShadowStrength());
+    Gfx::SetShadowMaps(gUserSettings.GetShadows() >= 2, gUserSettings.ShadowStrength());
     Gfx::SetDepthFog(gUserSettings.GetDepthFog());
 #ifdef MU_RENDER_WEBGPU
     // DESVIACION: backend de render elegido en Config.ini ([Window] RenderBackend).

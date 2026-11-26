@@ -619,10 +619,10 @@ void COptionsMenu::RenderGraphics()
     Platform::TextFormatSecure(text, gClientText.Get(ClientTextId::Antialiasing), antialiasingNames[antialiasing]);
     RenderSelector((float)RowY(row++), text, antialiasing > 0, antialiasing < 3);
     // DESVIACION: sombras proyectadas (sólo WebGPU por ahora).
-    static const char* const shadowNames[3] = { "Off", "1", "2" };
+    static const char* const shadowNames[4] = { "Off", "Original", "Soft", "Strong" };
     const int shadows = gUserSettings.GetShadows();
     Platform::TextFormatSecure(text, gClientText.Get(ClientTextId::Shadows), shadowNames[shadows]);
-    RenderSelector((float)RowY(row++), text, shadows > 0, shadows < 2);
+    RenderSelector((float)RowY(row++), text, shadows > 0, shadows < 3);
     RenderToggle((float)RowY(row++), gClientText.Get(ClientTextId::DepthFog), gUserSettings.GetDepthFog());
     // DESVIACION: distancia de dibujado.
     static const char* const distanceNames[4] = { "Normal", "x1.5", "x2", "x3" };
@@ -710,7 +710,7 @@ bool COptionsMenu::UpdateGraphics()
         return true;
     }
     const int shadows = gUserSettings.GetShadows();
-    const int shadowStep = UpdateSelector(RowY(row++), shadows > 0, shadows < 2);
+    const int shadowStep = UpdateSelector(RowY(row++), shadows > 0, shadows < 3);
     if (shadowStep != INT_MIN) {
         if (shadowStep) gUserSettings.SetShadows(shadows + (shadowStep > 0 ? 1 : -1));
         return true;

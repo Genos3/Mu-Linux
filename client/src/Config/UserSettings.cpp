@@ -108,7 +108,7 @@ void CUserSettings::Load(const char* iniPath)
     m_Sharpness = ReadRange("Window", "Sharpness", iniPath, 0, 3, 0);
     m_Antialiasing = m_StartupAntialiasing = ReadRange("Window", "Antialiasing", iniPath, 0, 3, 0);
     m_HDTextures = m_StartupHDTextures = ReadRange("Window", "HDTextures", iniPath, 0, 1, 0) != 0;
-    m_Shadows = ReadRange("Window", "Shadows", iniPath, 0, 2, 0);
+    m_Shadows = ReadRange("Window", "Shadows", iniPath, 0, 3, 0);
     m_DepthFog = ReadRange("Window", "DepthFog", iniPath, 0, 1, 0) != 0;
     m_DrawDistance = ReadRange("Window", "DrawDistance", iniPath, 0, 3, 0);
     if (m_Resolution < -1 || m_Resolution >= MAX_USER_RESOLUTION) {
@@ -276,10 +276,11 @@ void CUserSettings::SetHDTextures(bool enabled)
 
 void CUserSettings::SetShadows(int level)
 {
-    if (level < 0 || level > 2) return;
+    if (level < 0 || level > 3) return;
     m_Shadows = level;
     SaveInt("Window", "Shadows", level);
-    Gfx::SetShadowMaps(level > 0, ShadowStrength());
+    // 0 = off, 1 = original flat shadow (no shadow maps), 2/3 = projected.
+    Gfx::SetShadowMaps(level >= 2, ShadowStrength());
 }
 
 void CUserSettings::SetDepthFog(bool enabled)

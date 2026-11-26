@@ -87,7 +87,9 @@ void __cdecl BMD__RenderBodyShadow(void *model, int param_1, int param_2)
 {
     // DESVIACION (DLL Antilag, 0x00441F0D): sin sombras.
     if (gUserSettings.GetAntilag(ANTILAG_SHADOWS)) return;
-    // DESVIACION: con las sombras proyectadas activas, la plana sobra.
+    // DESVIACION: Shadows=0 means fully off; Shadows=1 is the original flat
+    // shadow; 2/3 use projected maps so the flat pass is redundant.
+    if (gUserSettings.GetShadows() == 0) return;
     if (Gfx::ShadowMaps()) return;
     const auto* bmd = AsModel(model);
     if (bmd->NumMeshs == 0) return;
