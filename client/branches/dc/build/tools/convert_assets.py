@@ -128,7 +128,11 @@ def copy_other(src, out, log):
     for path in sorted(src.rglob("*")):
         if not path.is_file():
             continue
-        if path.suffix.lower() in (".ozj", ".ozt", ".wav", ".bmp"):
+        ext = path.suffix.lower()
+        # TerrainLight.OZJ is not a display texture: OpenJpegBuffer decodes it
+        # into the per-vertex terrain light table, so keep the original file.
+        if ext in (".wav", ".bmp") or (ext in (".ozj", ".ozt")
+                                       and not path.stem.startswith("TerrainLight")):
             continue
         rel = path.relative_to(src)
         dest = out / rel

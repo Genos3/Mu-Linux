@@ -50,6 +50,30 @@
 #define TER_LIGHT   ((float(*)[3])&PrimaryTerrainLightStorage[0])        // PrimaryTerrainLight[N][3]
 #define TER_NODRAW  TerrainNoDrawFlag                           // 0x0839BC86 (skip-draw flag)
 
+// The baked lightmap can contain strong per-channel differences (e.g. G=0 with
+// R/B high) that show up as magenta through PVR's 8-bit vertex colours. Clamp
+// the chroma while preserving brightness, the same way the legacy path does.
+static void TerrainVertexLight(int index, float* out)
+{
+    float r = TER_LIGHT[index][0], g = TER_LIGHT[index][1], b = TER_LIGHT[index][2];
+    int zeros = (r == 0.0f) + (g == 0.0f) + (b == 0.0f);
+    if (zeros >= 2) { out[0] = out[1] = out[2] = 0.85f; return; }
+    if (zeros == 1) {
+        float avg = (r + g + b) * 0.5f;
+        if (r == 0.0f) r = avg;
+        if (g == 0.0f) g = avg;
+        if (b == 0.0f) b = avg;
+    }
+    float mx = r > g ? (r > b ? r : b) : (g > b ? g : b);
+    float mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    if (mx - mn > 0.4f) {
+        float avg = (r + g + b) * (1.0f / 3.0f);
+        out[0] = out[1] = out[2] = avg;
+        return;
+    }
+    out[0] = r; out[1] = g; out[2] = b;
+}
+
 // DESVIACION R3a: replay de atributos/material final, sin tocar picking, RNG
 // ni buffers de SIM. La captura sólo se habilita en RenderTerrain(EditFlag=0).
 static TerrainDraw::Texture CaptureTexture(int texture) {
@@ -241,8 +265,11 @@ void __cdecl RenderFace(int Texture)
     BufferedDraw::Vertex corners[4];
     for (int i=0;i<4;++i) {
         const int index=indices[i];
+        float lit[3];
+        if (TerrainDebugFlat()) { lit[0]=dr; lit[1]=dg; lit[2]=db; }
+        else TerrainVertexLight(index, lit);
         corners[i]={{v[i][0],v[i][1],v[i][2]},
-            {TerrainDebugFlat()?dr:1.0f,TerrainDebugFlat()?dg:1.0f,TerrainDebugFlat()?db:1.0f,1},
+            {lit[0],lit[1],lit[2],1},
             {tc[i][0],tc[i][1],0,1}};
     }
     if(!Batched(0,TSlot(Texture + 35),corners))BufferedDraw::Quad(corners,true);
@@ -263,8 +290,11 @@ void __cdecl RenderFaceAlpha(int Texture)
     BufferedDraw::Vertex corners[4];
     for (int i=0;i<4;++i) {
         const int index=indices[i];
+        float lit[3];
+        if (TerrainDebugFlat()) { lit[0]=dr; lit[1]=dg; lit[2]=db; }
+        else TerrainVertexLight(index, lit);
         corners[i]={{v[i][0],v[i][1],v[i][2]},
-            {TerrainDebugFlat()?dr:L[index][0],TerrainDebugFlat()?dg:L[index][1],TerrainDebugFlat()?db:L[index][2],TER_ALPHA[index]},
+            {lit[0],lit[1],lit[2],TER_ALPHA[index]},
             {tc[i][0],tc[i][1],0,1}};
     }
     if(!Batched(1,TSlot(Texture + 35),corners))BufferedDraw::Quad(corners,true);

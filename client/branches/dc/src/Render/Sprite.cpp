@@ -49,6 +49,7 @@
 
 #include "stdafx.h"
 #include "Render/BufferedDraw.h"
+#include <cmath>
 
 
 /* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
@@ -108,6 +109,14 @@ RenderSprite_0(int param_1,float *param_2,float param_3,float param_4,float *par
   // local_a4 guarda el bit-pattern de TPos[2]: reinterpretar los bits (el
   // decompile hace `(float)local_a4`, que sería un CAST int→float).
   float depth_eye = *(float*)&local_a4;
+  // A stale effect slot can carry a garbage texture index and garbage size,
+  // producing a full-screen additive quad with nonsense coordinates. Reject
+  // those before they reach the TA.
+  if (!std::isfinite(local_ac) || !std::isfinite(local_a8) || !std::isfinite(depth_eye) ||
+      !std::isfinite(local_9c[3]) || !std::isfinite(local_80) ||
+      std::fabs(local_ac) > 1000000.0f || std::fabs(local_a8) > 1000000.0f ||
+      std::fabs(local_9c[3]) > 100000.0f || std::fabs(local_80) > 100000.0f)
+    return;
   if (param_6 == FloatZeroB) {
     local_60[0] = local_ac - local_9c[3];
     local_60[2] = depth_eye;

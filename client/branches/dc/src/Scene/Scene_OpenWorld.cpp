@@ -85,18 +85,13 @@ void __cdecl OpenWorld(void) {
     // usan las extensiones reales.
     crt_sprintf(local_40, "%s/TerrainHeight.OZB", world_name); CreateTerrain(local_40);
     MU_TRACE("WORLD: CreateTerrain (height) done");
-    if (TestSceneMapId >= 0) {
-        // TerrainLight.dt is an offline-converted texture; OpenJpegBuffer expects
-        // the original JPEG and would abort the game. Use neutral ambient light.
-        for (int i = 0; i < 256 * 256 * 3; ++i) TerrainLightAmbientBuf[i] = 1.0f;
-        CreateTerrainNormal();
-        CreateTerrainLight();
-        MU_TRACE("WORLD: TerrainLight neutral: ambient=%.3f normal=%.3f light=%.3f",
-                 TerrainLightAmbientBuf[0], TerrainNormalTable[0], TerrainLightData[0]);
-    } else {
-        crt_sprintf(local_40, "%s/TerrainLight.OZJ",  world_name); OpenTerrainLight(local_40);
-        MU_TRACE("WORLD: TerrainLight done");
-    }
+    // TerrainLight is per-grid-vertex data baked from this JPEG by
+    // CreateTerrainLight; it is not a display texture. The converter keeps the
+    // original .OZJ on the DC disc so both the test viewer and real gameplay
+    // use the real baked light instead of a neutral fill.
+    crt_sprintf(local_40, "%s/TerrainLight.OZJ",  world_name); OpenTerrainLight(local_40);
+    MU_TRACE("WORLD: TerrainLight done: ambient=%.3f normal=%.3f light=%.3f",
+             TerrainLightAmbientBuf[0], TerrainNormalTable[0], TerrainLightData[0]);
 
     // Tile textures (OZJ: slots 0x23-0x30; OZT alpha overlays: slots 0x32-0x34)
     crt_sprintf(local_40, "%s/TileGrass01.OZJ",  world_name); DC_LoadTexture(local_40, 0x23, 0x2600, 0x2901);
