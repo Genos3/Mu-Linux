@@ -8,6 +8,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# macOS ships BSD make; KOS Makefile needs GNU make (brew install make).
+case "$(uname -s)" in
+    Darwin) MAKE="${MAKE:-gmake}" ;;
+    *)      MAKE="${MAKE:-make}" ;;
+esac
 : "${KOS_BASE:="$HOME/dreamsdk/kos"}"
 : "${KOS_PORTS:="$HOME/dreamsdk/kos-ports"}"
 export KOS_BASE KOS_PORTS
@@ -26,8 +31,8 @@ ln -sfn ../../../lib lib
 ln -sfn ../../../lib ../../lib
 ln -sfn ../lib ../lib
 
-echo "[1/2] Building mu.elf (KOS at $KOS_BASE) ..."
-make -f Makefile.kos -j4
+echo "[1/2] Building mu.elf (KOS at $KOS_BASE, using $MAKE) ..."
+"$MAKE" -f Makefile.kos -j4
 
 if [ "${1:-}" != "converted" ]; then
     echo "Done. mu.elf is in $(pwd) (run with ./build_dc.sh converted to pack the CDI)"

@@ -55,6 +55,10 @@ export KOS_PORTS=/path/to/kos-ports       # default: $HOME/dreamsdk/kos-ports
 The scripts create symlinks instead of Windows junctions. CDI packing needs
 either a native `mkdcdisc` on `PATH` or `wine` with `tools/mkdcdisc.exe`.
 
+The same shell scripts work on **x86 macOS**: install GNU make (`brew install
+make`) — the script picks `gmake` automatically on Darwin. Linux/macOS users
+also need an sh-elf KOS toolchain at `KOS_BASE`.
+
 ## Test scene
 
 The DC build is compiled with `MU_TEST_SCENE_MAP` (in `src\globals.cpp`), so it
