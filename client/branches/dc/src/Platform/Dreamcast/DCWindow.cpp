@@ -25,7 +25,7 @@ class DCWindow final : public IWindow {
         if (done) return;
         done = true;
         pvr_init_params_t params = {
-            { PVR_BINSIZE_16, PVR_BINSIZE_0, PVR_BINSIZE_0, PVR_BINSIZE_0, PVR_BINSIZE_0 },
+            { PVR_BINSIZE_16, PVR_BINSIZE_0, PVR_BINSIZE_16, PVR_BINSIZE_0, PVR_BINSIZE_0 },
             1024 * 1024, 0, 0, 0, 0, 0
         };
         pvr_init(&params);

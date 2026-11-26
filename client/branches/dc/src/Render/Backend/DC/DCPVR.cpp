@@ -411,7 +411,12 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
     }
     // Use the real Z buffer for 3D (game has depth test enabled); for 2D UI
     // the game disables it - use DEPTHCMP_ALWAYS so the TA's sort is harmless.
-    cxt.depth.comparison = g_depthTest ? PVR_DEPTHCMP_GREATER : PVR_DEPTHCMP_ALWAYS;
+    // Translucent polys are TA-autosorted (autosort_disabled = 0); KOS libGL
+    // uses GEQUAL for that list so equal-depth fragments survive the sort.
+    // Opaque keeps GREATER (near = larger after the Z flip).
+    cxt.depth.comparison = g_depthTest
+        ? (translucent ? PVR_DEPTHCMP_GEQUAL : PVR_DEPTHCMP_GREATER)
+        : PVR_DEPTHCMP_ALWAYS;
     cxt.depth.write = g_depthTest;
     // Follow the same CullFace cap as the GL/WebGPU backends, but keep
     // alpha-blended geometry two-sided: semitransparent faces and flat rigging
