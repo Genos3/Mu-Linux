@@ -116,7 +116,6 @@
 //   CErrorReport_Write  → Log(hashtable, msg)
 
 #include "stdafx.h"
-#include <cstdlib>
 #include "Render/Gfx.h"
 #include "Scene/Scene_Intro.h"
 
@@ -213,13 +212,35 @@ void __cdecl Scene_Intro(HDC param_1)
     // Spawn at the canonical Lorencia grid (125,125) -> world (12550,12550),
     // matching the DC test scene for side-by-side comparison. Legacy bypass
     // position (1350,21742) was an Atlans-era coordinate.
-    float spawnX = std::getenv("MU_TEST_SCENE") ? 12550.0f : 1350.0f;
-    float spawnY = std::getenv("MU_TEST_SCENE") ? 12550.0f : 21742.0f;
+    float spawnX = TestSceneMode ? 12550.0f : 1350.0f;
+    float spawnY = TestSceneMode ? 12550.0f : 21742.0f;
     local_8 = (undefined1 *)CreateHero(0, 0, 0, spawnX, spawnY, 0.0f);
     // Anti-tamper hash code below treats iStack_10 as an object base pointer
     // (see LAB_00513b4e). In the bypass it was left uninitialized (often 0),
     // causing a write to absolute address 0x3CC -> access violation.
     iStack_10 = reinterpret_cast<intptr_t>(local_8);
+
+    // The normal server path (Recv_Character.cpp:504) initialises target_grid
+    // and the walker state. Without it TargetX/Y stay 0 and Entity_AdvancePath
+    // walks the hero to the map corner through walls. Also set idle anim
+    // (anim_state 1) so the full body renders from the first frame.
+    if (TestSceneMode && local_8) {
+        const int gx = (int)(spawnX * 0.01f), gy = (int)(spawnY * 0.01f);
+        AsCharacter(local_8)->TargetX = gx;
+        AsCharacter(local_8)->TargetY = gy;
+        AsCharacter(local_8)->JumpTime = 0;
+        AsCharacter(local_8)->PathCurrent = 0;
+        AsCharacter(local_8)->PathSubstep = 0;
+        AsCharacter(local_8)->PathNum = 0;
+        AsCharacter(local_8)->Object.CurrentAction = 1;
+        AsCharacter(local_8)->Object.PriorAction = 1;
+        AsCharacter(local_8)->Object.AnimationFrame = 0.0f;
+        AsCharacter(local_8)->Object.Kind = 1;
+        AsCharacter(local_8)->Skin = 0;
+        *(unsigned int*)&AsCharacter(local_8)->Object.Light[0] = 0x3e99999a;
+        *(unsigned int*)&AsCharacter(local_8)->Object.Light[1] = 0x3e99999a;
+        *(unsigned int*)&AsCharacter(local_8)->Object.Light[2] = 0x3e99999a;
+    }
     puVar1  = (undefined4 *)(local_8 + EntityOffset(0x388));
     local_c = puVar1;
     uVar4   = (**(code **)(MAIN_HASH_CLASS + 3 * sizeof(void*)))(puVar1);
