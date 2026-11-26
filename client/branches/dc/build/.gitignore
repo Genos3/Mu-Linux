@@ -10,4 +10,8 @@ raw_assets/
 tga_previews/
 __pycache__/
 *.pyc
+# Build-tree junctions to shared source/lib folders (not real content)
+cmake/
+lib/
+src/
 
