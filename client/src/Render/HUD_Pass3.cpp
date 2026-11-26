@@ -73,6 +73,14 @@ extern "C" void HUD_InitInventoryPools(void)
     // válido (Kris) en vez del marcador de celda vacía (0xFFFF).
     initPool(OffsetWarehouseItems,  120 * 0x44);
 
+    // 12 equipped-item slots live at CharacterMachine+536, outside the grids
+    // above. Without the 0xFFFF empty marker they read as Type=0 (Kris) and
+    // render "Kris (0/20)" repeatedly at the top-right (same fix as DC).
+    if (CharacterMachine) {
+        BYTE* wear = reinterpret_cast<BYTE*>(CharacterMachine) + 536;
+        for (int i = 0; i < 12; ++i)
+            *reinterpret_cast<WORD*>(wear + i * 0x44) = 0xFFFF;
+    }
 }
 
 extern "C" {

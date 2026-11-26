@@ -572,12 +572,15 @@ void Render_Scene3D(void)
         // Set the same values the real game would for a hero at this position,
         // matching the DC test scene for side-by-side comparison.
         if (std::getenv("MU_TEST_SCENE")) {
-            CameraPosition[0] = camPos[0];
-            CameraPosition[1] = camPos[1] - 1000.0f;
+            // Original in-game isometric camera: the real client sets
+            // CameraAngle[2] = -45 deg on entering the game, and rotates the
+            // (0,-1000,0) eye offset by that yaw -> (+707.1, -707.1, 0).
+            CameraPosition[0] = camPos[0] + 707.10678f;
+            CameraPosition[1] = camPos[1] - 707.10678f;
             CameraPosition[2] = 850.0f;
             CameraAngle[0] = -48.5f;
             CameraAngle[1] = 0.0f;
-            CameraAngle[2] = 0.0f;
+            CameraAngle[2] = -45.0f;
         }
     } else {
         camPos[0] = camPos[1] = camPos[2] = 0.0f;
