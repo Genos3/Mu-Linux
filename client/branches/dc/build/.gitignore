@@ -1,0 +1,13 @@
+# Generated Dreamcast build artifacts (never version these)
+*.elf
+*.cdi
+*.log
+*.dmp
+.build/
+obj/
+dc_assets/
+raw_assets/
+tga_previews/
+__pycache__/
+*.pyc
+

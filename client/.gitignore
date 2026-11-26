@@ -15,7 +15,15 @@ obj/
 
 # Ramas de trabajo locales: cada carpeta de /branches/ es un arbol aparte con
 # su propio repo anidado (p. ej. /branches/test/src). No se versionan aqui.
-/branches/
+# Excepcion: el port de Dreamcast SI se versiona (fuentes + scripts de build).
+/branches/*
+!/branches/dc/
+/branches/dc/build/*
+!/branches/dc/build/*.cmd
+!/branches/dc/build/*.md
+!/branches/dc/build/.gitignore
+!/branches/dc/build/Makefile.kos
+!/branches/dc/build/tools/
 # Backups del port: copias historicas del source, nunca se suben.
 /bkp/
 

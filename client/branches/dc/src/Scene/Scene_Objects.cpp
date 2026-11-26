@@ -1,0 +1,447 @@
+#include <cstdint>
+#include "stdafx.h"
+#include "../globals.h"
+#include "../functions.h"
+
+// Map_LoadObjectModels — port alternativo de 0x0050c4d0
+// La versión activa (linkeada) es OpenWorldModels, en
+// Terrain/Terrain_LegacyLoad.cpp. Este port tiene strings distintos (ej.
+// "SeaCreature" vs "SummonMonster") y quedó fuera del build.
+// Se deja como documentación / referencia.
+#if 0
+void Map_LoadObjectModels(void)
+{
+    return;  // DISABLED: port alternativo, no usado
+    char  cVar2;
+    int   iVar3;
+    int   iVar7;
+    char  local_384[32];
+    char  local_364[100];
+    char  local_300[256];
+    char  local_200[256];
+    char  local_100[256];
+
+    cVar2 = g_tex_ext_mode;
+    if (InGameModeFlag != '\0') {
+        g_tex_ext_mode = '\0';
+        gMapManager.SetCurrentMap(7);
+    }
+
+    // Global drop texture always loaded
+    DC_LoadTexture("Object8/drop01.jpg", 0x4d9, 0x2600, 0x2900);
+
+    if (g_tex_ext_mode != '\0') goto section2;
+
+    // ── Section 1: per-zone animated creature BMD loads ─────────────────────
+    switch (gMapManager.GetCurrentMap()) {
+    case 0: // Lorencia
+        OpenModel(0xae, "Data2/Object1/Animal/", "bird.smd");
+        OpenModel(0xb5, "Data2/Object1/Animal/", "fish.smd");
+        break;
+    case 1:
+    case 4: // Dungeon
+        OpenModel(0xd7, "Data2/Object2/", "DungeonStone.smd" /* DungeonStoneModelName */);
+        OpenModel(0xb0, "Data2/Object2/", "Bat.smd");
+        OpenModel(0xb1, "Data2/Object2/", "mouse.smd");
+        break;
+    case 3: // Noria
+        OpenModel(0xaf, "Data2/Object1/Animal/", "butterfly.smd");
+        break;
+    case 5: // LostTower
+        OpenModel(0xe4, "Data2/Object6/", "Meteo1.smd"    /* Meteo1ModelName */);
+        OpenModel(0xe5, "Data2/Object6/", "Meteo2.smd"    /* Meteo2ModelName */);
+        OpenModel(0xe6, "Data2/Object6/", "Meteo3.smd"    /* Meteo3ModelName */);
+        OpenModel(0xe7, "Data2/Object6/", "Meteo4.smd"    /* Meteo4ModelName */);
+        OpenModel(0xe8, "Data2/Object6/", "Meteo5.smd"    /* Meteo5ModelName */);
+        OpenModel(0xea, "Data2/Monster/", "BossHead.smd"  /* BossHeadModelName */);
+        OpenModel(0xeb, "Data2/Object6/", "Princess.smd"  /* PrincessModelName */);
+        break;
+    case 6: // Atlans
+        OpenModel(0xb2, "Data2/Object7/", "SeaCreature.smd" /* SeaCreatureModelName */);
+        *(BYTE *)((uintptr_t)AsModel(ModelsBase + BMD_STRIDE * 178)->Actions + 0x1a) = 1;
+        break;
+    case 7: // Icarus
+        OpenModel(0xb6, "Data2/Object8/", "IcarusWing1.smd" /* IcarusWing1ModelName */);
+        OpenModel(0xb7, "Data2/Object8/", "IcarusWing2.smd" /* ModelNameIcarusWing2 */);
+        OpenModel(0xb8, "Data2/Object8/", "IcarusWing3.smd" /* ModelNameIcarusWing3 */);
+        OpenModel(0xb9, "Data2/Object8/", "IcarusWing4.smd" /* ModelNameIcarusWing4 */);
+        OpenModel(0xba, "Data2/Object8/", "IcarusWing5.smd" /* ModelNameIcarusWing5 */);
+        OpenModel(0xbb, "Data2/Object8/", "IcarusWing6.smd" /* ModelNameIcarusWing6 */);
+        OpenModel(0xbc, "Data2/Object8/", "IcarusWing7.smd" /* ModelNameIcarusWing7 */);
+        OpenModel(0xbd, "Data2/Object8/", "IcarusWing8.smd" /* ModelNameIcarusWing8 */);
+        // Mark Icarus objects as billboard-capable (type range 0xbc..0x69b step 0xbc)
+        iVar7 = 0xbc;
+        do {
+            iVar3 = iVar7 + 0xbc;
+            *(BYTE *)((intptr_t)AsModel(ModelsBase + BMD_STRIDE * (181 + iVar7 / 0xbc))->Actions + 10) = 1;
+            iVar7 = iVar3;
+        } while (iVar3 < 0x69c);
+        break;
+    case 8: // Barracks
+        OpenModel(0xb3, "Data2/Object9/", "Barracks1.smd" /* ModelNameBarracks1 */);
+        break;
+    case 10: // Clouds
+        DC_LoadTexture("Effect/clouds.jpg", 0x4f4, 0x2601, 0x2900);
+        OpenModel(0xb6, "Data2/Object11/", "cloud.smd");
+        AccessModel(0xb6, "Data/Object11/", "cloud", -1);
+        OpenTexture(0xb6, "Object11/", 0x2600, '\x01');
+        DC_LoadTexture("Effect/cloudLight.jpg", 0x4f5, 0x2601, 0x2900);
+        break;
+    case 0xb:
+    case 0xc:
+    case 0xd:
+    case 0xe:
+    case 0xf:
+    case 0x10: // BloodCastle
+        OpenModel(0xb8, "Data2/Object12/", "BC_Gate.smd" /* ModelNameBCGateSmd */);
+        break;
+    }
+
+section2:
+    // ── Section 2: per-zone animation + texture loads ────────────────────────
+    SetMaxTextures(0x69);
+
+    switch (gMapManager.GetCurrentMap()) {
+    case 0: // Lorencia
+        AccessModel(0xae, "Data/Object1/", "bird"   /* ModelNameBird */, 1);
+        OpenTexture(0xae, "Object1/", 0x2600, '\x01');
+        AccessModel(0xb5, "Data/Object1/", "fish"   /* ModelNameFish */, 1);
+        OpenTexture(0xb5, "Object1/", 0x2600, '\x01');
+        break;
+    case 1:
+    case 4: // Dungeon
+        AccessModel(0xd7, "Data/Object2/", "DungeonStone", 1);
+        OpenTexture(0xd7, "Object2/", 0x2600, '\x01');
+        AccessModel(0xb0, "Data/Object2/", "Bat"   /* PTR_DAT_0055f31c */, 1);
+        OpenTexture(0xb0, "Object2/", 0x2600, '\x01');
+        AccessModel(0xb1, "Data/Object2/", "mouse" /* PTR_DAT_0055f318 */, 1);
+        OpenTexture(0xb1, "Object2/", 0x2600, '\x01');
+        break;
+    case 3: // Noria
+        AccessModel(0xaf, "Data/Object1/", "Butterfly", 1);
+        OpenTexture(0xaf, "Object1/", 0x2600, '\x01');
+        break;
+    case 5: // LostTower — Meteo1..5, BossHead, Princess
+        iVar7 = 0xe4;
+        do {
+            AccessModel(iVar7, "Data/Object6/", "Meteo", iVar7 + -0xe3);
+            iVar3 = iVar7 + -0xe3;
+            iVar7 = iVar7 + 1;
+        } while (iVar3 < 5);
+        AccessModel(0xea, "Data/Object6/", "BossHead", 1);
+        AccessModel(0xeb, "Data/Object6/", "Princess", 1);
+        iVar7 = 0xe4;
+        do {
+            OpenTexture(iVar7, "Object6/", 0x2600, '\x01');
+            iVar7 = iVar7 + 1;
+        } while (iVar7 < 0xec);
+        break;
+    case 6: // Atlans
+        AccessModel(0xb2, "Data/Object7/", "SeaCreature" /* PTR_DAT_0055f2cc */, 1);
+        OpenTexture(0xb2, "Object7/", 0x2600, '\x01');
+        break;
+    case 7: // Icarus — animated wings + water textures
+        iVar7 = 0xb6;
+        do {
+            AccessModel(iVar7, "Data/Object8/", "fish" /* ModelNameFish */, iVar7 + -0xb4);
+            OpenTexture(iVar7, "Object8/", 0x2600, '\x01');
+            iVar3 = iVar7 + -0xb4;
+            iVar7 = iVar7 + 1;
+        } while (iVar3 < 9);
+        // Load water tile textures into IcarusWaterTileNameTable array (32 entries × 0x38 stride).
+        //
+        // Acceso indexado (IDA usa las direcciones absolutas `0x83a8d08`/`0x83a91d8`
+        // como bounds). Las primeras 10 entradas (0x83a8d08 - 0x83a8ad8 = 0x230 =
+        // 10 × 0x38) llevan "wt0_%d.jpg".
+        for (int texIdx = 0; texIdx < 32; ++texIdx) {
+            char* pEntry = &IcarusWaterTileNameTable[texIdx * 0x38];
+            const char* fmtPath = (texIdx < 10) ? "Object8/wt0_%d.jpg" : "Object8/wt_%d.jpg";
+            const char* fmtName = (texIdx < 10) ? "wt0_%d.jpg"         : "wt_%d.jpg";
+            crt_sprintf(local_364, fmtPath);
+            DC_LoadTexture(local_364, texIdx + 0x41, 0x2601, 0x2901);
+            crt_sprintf(local_364, fmtName);
+            // strcpy local_364 into pEntry (string + null)
+            char* pDst = pEntry;
+            const char* pSrc = local_364;
+            while ((*pDst++ = *pSrc++) != '\0') { /* copy */ }
+        }
+        break;
+    case 8: // Barracks — sand + impact textures
+        DC_LoadTexture("Object9/sand01.jpg", 0x494, 0x2601, 0x2901);
+        DC_LoadTexture("Object9/sand02.jpg", 0x495, 0x2601, 0x2901);
+        DC_LoadTexture("Object9/Impack03.jpg", 0x597, 0x2601, 0x2900);
+        AccessModel(0xb3, "Data/Object9/", "Barracks" /* PTR_DAT_0055f2cc */, 2);
+        OpenTexture(0xb3, "Object9/", 0x2600, '\x01');
+        break;
+    case 10: // Clouds
+        DC_LoadTexture("Effect/clouds.jpg", 0x4f4, 0x2601, 0x2900);
+        AccessModel(0xb6, "Data/Object11/", "cloud", -1);
+        OpenTexture(0xb6, "Object11/", 0x2600, '\x01');
+        DC_LoadTexture("Effect/cloudLight.jpg", 0x4f5, 0x2601, 0x2900);
+        break;
+    case 0xb:
+    case 0xc:
+    case 0xd:
+    case 0xe:
+    case 0xf:
+    case 0x10: // BloodCastle
+        if (g_tex_ext_mode == '\0') {
+            OpenModel(0xb8,  "Data2/Object12/", "BC_Gate.smd"    /* ModelNameBCGateSmd */);
+            OpenModel(0x106, "Data2/Object12/", "BC_Statue1.smd" /* ModelNameBCStatue1 */);
+            OpenModel(0x107, "Data2/Object12/", "BC_Statue2.smd" /* ModelNameBCStatue2 */);
+            OpenModel(0x104, "Data2/Object12/", "BC_Coffin1.smd" /* ModelNameBCCoffin1 */);
+            OpenModel(0x105, "Data2/Object12/", "BC_Coffin2.smd" /* ModelNameBCCoffin2 */);
+            OpenModel(0xb9,  "Data2/Object12/", "BC_Shine.smd"   /* ModelNameBCShine */);
+        }
+        AccessModel(0xb8,  "Data/Object12/", "BC_Gate"    /* ModelNameBCGate */, 1);
+        OpenTexture(0xb8,  "Object12/", 0x2600, '\x01');
+        AccessModel(0x106, "Data/Object12/", "BC_Statue"  /* ModelNameBCStatue */, 1);
+        AccessModel(0x107, "Data/Object12/", "BC_Statue"  /* ModelNameBCStatue */, 2);
+        AccessModel(0x104, "Data/Object12/", "StoneCoffin", 1);
+        AccessModel(0x105, "Data/Object12/", "StoneCoffin", 2);
+        iVar7 = 0;
+        do {
+            OpenTexture(iVar7 + 0x106, "Monster/", 0x2600, '\x01');
+            iVar7 = iVar7 + 1;
+        } while (iVar7 < 2);
+        iVar7 = 0;
+        do {
+            OpenTexture(iVar7 + 0x104, "Monster/", 0x2600, '\x01');
+            iVar7 = iVar7 + 1;
+        } while (iVar7 < 2);
+        AccessModel(0xb9,  "Data/Object12/", "Shine", 1);
+        OpenTexture(0xb9,  "Object12/", 0x2600, '\x01');
+        DC_LoadTexture("Effect/clouds.jpg", 0x4f4, 0x2601, 0x2900);
+        LoadWaveFile(0x6e, "Data/Sound/iBloodCastle.wav", 1, '\0');
+        g_tex_ext_mode = '\x01';
+        break;
+    }
+
+    // ── Section 3: main object set (Lorencia ~100 BMDs or custom map file) ──
+    SetMaxTextures(0x2ee);
+
+    if (gMapManager.GetCurrentMap() == 0) {
+        // Lorencia: load all object models if not yet cached
+        if (g_tex_ext_mode == '\0') {
+            // Trees
+            OpenModel(0x00, "Data2/Object1/", "treesmall.smd");
+            OpenModel(0x01, "Data2/Object1/", "treebig.smd");
+            OpenModel(0x02, "Data2/Object1/", "treea_01.smd");
+            OpenModel(0x03, "Data2/Object1/", "treea_02.smd");
+            OpenModel(0x04, "Data2/Object1/", "treea_03.smd");
+            OpenModel(0x05, "Data2/Object1/", "treea_04.smd");
+            OpenModel(0x06, "Data2/Object1/", "treea_05.smd");
+            OpenModel(0x07, "Data2/Object1/", "treea_06.smd");
+            OpenModel(0x08, "Data2/Object1/", "treea_07.smd");
+            OpenModel(0x09, "Data2/Object1/", "treea_08.smd");
+            OpenModel(0x0a, "Data2/Object1/", "treea_09.smd");
+            OpenModel(0x0b, "Data2/Object1/", "treea_10.smd");
+            OpenModel(0x0c, "Data2/Object1/", "treea_11.smd");
+            // Grass
+            OpenModel(0x14, "Data2/Object1/", "grass_01.smd");
+            OpenModel(0x15, "Data2/Object1/", "grass_02.smd");
+            OpenModel(0x16, "Data2/Object1/", "grass_03.smd");
+            OpenModel(0x17, "Data2/Object1/", "grass_04.smd");
+            OpenModel(0x18, "Data2/Object1/", "grass_05.smd");
+            OpenModel(0x19, "Data2/Object1/", "grass_06.smd");
+            // Mushrooms
+            OpenModel(0x1e, "Data2/Object1/", "mushroom_01.smd");
+            OpenModel(0x1f, "Data2/Object1/", "mushroom_02.smd");
+            // Stones
+            OpenModel(0x28, "Data2/Object1/", "Ston_01.smd");
+            OpenModel(0x29, "Data2/Object1/", "Ston_02.smd");
+            OpenModel(0x2a, "Data2/Object1/", "Ston_03.smd");
+            OpenModel(0x2b, "Data2/Object1/", "Ston_04.smd");
+            OpenModel(0x2c, "Data2/Object1/", "Ston_05.smd");
+            // Statues / grave markers
+            OpenModel(0x32, "Data2/Object1/", "stone_statue01.smd");
+            OpenModel(0x33, "Data2/Object1/", "stone_statue02.smd");
+            OpenModel(0x34, "Data2/Object1/", "Angel_Stone.smd");
+            // Gates / doors
+            OpenModel(0x35, "Data2/Object1/", "steel_barred_door_side.smd");
+            // Tomb decorations
+            OpenModel(0x36, "Data2/Object1/", "Tomb_arc.smd");
+            OpenModel(0x37, "Data2/Object1/", "Tomb_cross.smd");
+            OpenModel(0x38, "Data2/Object1/", "TombStone.smd");
+            // Lights / fire
+            OpenModel(0x3c, "Data2/Object1/", "fire_light.smd");
+            OpenModel(0x3d, "Data2/Object1/", "Fire_Light_01.smd");
+            OpenModel(0x3e, "Data2/Object1/", "Fire.smd");
+            // Dungeon gate
+            OpenModel(0x3f, "Data2/Object1/", "dungeon_gate_01.smd");
+            // Misc props
+            OpenModel(0x46, "Data2/Object1/", "Drum.smd");
+            OpenModel(0x47, "Data2/Object1/", "Treasure_Chest.smd");
+            OpenModel(0x48, "Data2/Object1/", "ship.smd");
+            // Walls
+            OpenModel(0x50, "Data2/Object1/", "wall_01.smd");
+            OpenModel(0x51, "Data2/Object1/", "wall_02.smd");
+            OpenModel(0x52, "Data2/Object1/", "wall_03.smd");
+            OpenModel(0x53, "Data2/Object1/", "wall_04.smd");
+            OpenModel(0x54, "Data2/Object1/", "wall_05.smd");
+            OpenModel(0x55, "Data2/Object1/", "wall_06.smd");
+            OpenModel(0x56, "Data2/Object1/", "c_wall01.smd");
+            OpenModel(0x57, "Data2/Object1/", "c_wall02.smd");
+            OpenModel(0x58, "Data2/Object1/", "c_wall03.smd");
+            OpenModel(0x59, "Data2/Object1/", "c_wall04.smd");
+            OpenModel(0x5a, "Data2/Object1/", "c_wall05.smd");
+            OpenModel(0x5b, "Data2/Object1/", "c_wall06.smd");
+            OpenModel(0x5c, "Data2/Object1/", "c_wall07.smd");
+            OpenModel(0x5d, "Data2/Object1/", "steel_barred_02.smd");
+            OpenModel(0x5e, "Data2/Object1/", "steel_barred_03.smd");
+            OpenModel(0x5f, "Data2/Object1/", "steel_barred_01.smd");
+            OpenModel(0x60, "Data2/Object1/", "steel_barred_door.smd");
+            // Cannons / guns
+            OpenModel(0x64, "Data2/Object1/", "gun_01.smd");
+            OpenModel(0x65, "Data2/Object1/", "gun_02.smd");
+            OpenModel(0x66, "Data2/Object1/", "gun_03.smd");
+            // Bridges / fences
+            OpenModel(0x67, "Data2/Object1/", "bridge_01.smd");
+            OpenModel(0x68, "Data2/Object1/", "fence.smd");
+            OpenModel(0x69, "Data2/Object1/", "joint_01.smd");
+            OpenModel(0x6a, "Data2/Object1/", "joint_02.smd");
+            OpenModel(0x6b, "Data2/Object1/", "joint_03.smd");
+            OpenModel(0x6c, "Data2/Object1/", "bridge_02.smd");
+            // Town decorations
+            OpenModel(0x6d, "Data2/Object1/", "StreetLight.smd");
+            OpenModel(0x6e, "Data2/Object1/", "badge_01.smd");
+            OpenModel(0x6f, "Data2/Object1/", "horse_drawn.smd");
+            OpenModel(0x70, "Data2/Object1/", "carriage_01.smd");
+            OpenModel(0x71, "Data2/Object1/", "carriage_02.smd");
+            OpenModel(0x72, "Data2/Object1/", "carriage_03.smd");
+            OpenModel(0x73, "Data2/Object1/", "rice_01.smd");
+            OpenModel(0x74, "Data2/Object1/", "rice_02.smd");
+            OpenModel(0x75, "Data2/Object1/", "signboard_up.smd");
+            OpenModel(0x76, "Data2/Object1/", "signboard_down.smd");
+            OpenModel(0x77, "Data2/Object1/", "monster_a.smd");
+            OpenModel(0x78, "Data2/Object1/", "monster_b.smd");
+            OpenModel(0x79, "Data2/Object1/", "waterspout.smd");
+            // Jars
+            OpenModel(0x7a, "Data2/Object1/", "jar_01.smd");
+            OpenModel(0x7b, "Data2/Object1/", "jar_02.smd");
+            OpenModel(0x7c, "Data2/Object1/", "jar_03.smd");
+            OpenModel(0x7d, "Data2/Object1/", "jar_04.smd");
+            // Execution ground
+            OpenModel(0x7e, "Data2/Object1/", "execution_ground_01.smd");
+            // Buildings
+            OpenModel(0x7f, "Data2/Object1/", "house_stone_01.smd");
+            OpenModel(0x80, "Data2/Object1/", "house_stone_02.smd");
+            OpenModel(0x81, "Data2/Object1/", "house_smith.smd");
+            OpenModel(0x82, "Data2/Object1/", "house_science.smd");
+            OpenModel(0x83, "Data2/Object1/", "house_mill.smd");
+            OpenModel(0x84, "Data2/Object1/", "tent_01.smd");
+            OpenModel(0x85, "Data2/Object1/", "stairs.smd");
+            // House joints (structural connectors)
+            OpenModel(0x86, "Data2/Object1/", "house_joint_01.smd");
+            OpenModel(0x87, "Data2/Object1/", "house_joint_02.smd");
+            OpenModel(0x88, "Data2/Object1/", "house_joint_03.smd");
+            OpenModel(0x89, "Data2/Object1/", "house_joint_04.smd");
+            OpenModel(0x8a, "Data2/Object1/", "house_joint_05.smd");
+            OpenModel(0x8b, "Data2/Object1/", "house_joint_06.smd");
+            OpenModel(0x8c, "Data2/Object1/", "c_wall07.smd");
+            OpenModel(0x8d, "Data2/Object1/", "house.smd");
+            OpenModel(0x8e, "Data2/Object1/", "cage.smd");
+            // Effects
+            OpenModel(0x8f, "Data2/Object1/", "effect.smd");
+            OpenModel(0x90, "Data2/Object1/", "effect.smd");
+            OpenModel(0x91, "Data2/Object1/", "effect.smd");
+            OpenModel(0x92, "Data2/Object1/", "pose_box.smd");
+            // House interiors
+            OpenModel(0x93, "Data2/Object1/", "house_in_01.smd");
+            OpenModel(0x94, "Data2/Object1/", "house_in_02.smd");
+            OpenModel(0x95, "Data2/Object1/", "house_in_03.smd");
+            OpenModel(0x96, "Data2/Object1/", "house_in_04.smd");
+            OpenModel(0x97, "Data2/Object1/", "house_in_05.smd");
+            OpenModel(0x98, "Data2/Object1/", "house_in_06.smd");
+            OpenModel(0x99, "Data2/Object1/", "house_in_07.smd");
+            // Candle
+            OpenModel(0x9a, "Data2/Object1/", "candle.smd");
+            // Beer barrels / tavern props
+            OpenModel(0x9b, "Data2/Object1/", "house_in_beer_01.smd");
+            OpenModel(0x9c, "Data2/Object1/", "house_in_beer_02.smd");
+            OpenModel(0x9d, "Data2/Object1/", "house_in_beer_03.smd");
+
+            LorenciaModelsLoadedFlag = 1;
+        }
+
+        // Animation + texture setup for Lorencia objects
+        // Trees 0x00..0x0c → anim "Tree" index 1..13
+        iVar7 = 0;
+        do {
+            iVar3 = iVar7 + 1;
+            AccessModel(iVar7, "Data/Object1/", "Tree" /* ModelNameTree */, iVar3);
+            iVar7 = iVar3;
+        } while (iVar3 < 0xd);
+        // Grass 0x14..0x19 → anim "Grass" index 1..6
+        iVar7 = 0x14;
+        do {
+            AccessModel(iVar7, "Data/Object1/", "Grass", iVar7 - 0x13);
+            iVar7++;
+        } while (iVar7 < 0x1a);
+        // Textures for all Lorencia objects 0x00..0x9f
+        iVar7 = 0;
+        do {
+            OpenTexture(iVar7, "Object1/", 0x2600, '\x01');
+            iVar7 = iVar7 + 1;
+        } while (iVar7 < 0xa0);
+    } else {
+        // Custom / unknown map — load models from a data file
+        if (g_tex_ext_mode == '\0') {
+            crt_sprintf(local_384, "%d" /* MapObjPathFmt format: zone index path */);
+            ParserFileHandle = (FILE*)crt_fopen(local_384, FopenModeRb);
+            if (ParserFileHandle != NULL) {
+                while (true) {
+                    int typeId = ParseNextToken();
+                    long long lv = (longlong)ParserTokenNumber;   // IDA: (std::int64_t)TokenNumber  (ParserTokenNumber)
+                    int puVar10 = (int)lv;
+                    if (typeId == 2) break;
+                    ParseNextToken();
+                    // local_300 ← ParserTokenString (filename token)
+                    memcpy(local_300, &ParserTokenString, sizeof(local_300));
+                    ParseNextToken();
+                    memcpy(local_200, &ParserTokenString, sizeof(local_200));
+                    ParseNextToken();
+                    memcpy(local_100, &ParserTokenString, sizeof(local_100));
+                    crt_sprintf(local_384, "Data2/Object/%d/");
+                    // If local_200 is empty, load model with just local_300
+                    OpenModel(puVar10, local_384, local_300);
+                }
+                crt_fclose(ParserFileHandle);
+            }
+        }
+        // Animations for custom map objects 0x00..0x9f
+        crt_sprintf(local_384, "Data/Object/%d/");
+        iVar7 = 0;
+        do {
+            iVar3 = iVar7 + 1;
+            AccessModel(iVar7, local_384, "Object", iVar3);
+            iVar7 = iVar3;
+        } while (iVar3 < 0xa0);
+        SetMaxTextures(0x2ee);
+        // Texture prefix for custom map objects
+        crt_sprintf(local_384, "Object/%d/");
+        iVar7 = 0;
+        do {
+            OpenTexture(iVar7, local_384, 0x2600, '\x01');
+            iVar7 = iVar7 + 1;
+        } while (iVar7 < 0xa0);
+        // Zone-specific post-load fixups
+        if (gMapManager.GetCurrentMap() == 1) {
+            // Dungeon: set a float property on model slot 0x76 (offset 0x1d90 into table)
+            *(float *)((uintptr_t)AsModel(ModelsBase + BMD_STRIDE * 40)->Actions + sizeof(ModelAnimationAction) + 4) = 0.4f; // 0x3ecccccd
+        } else if (gMapManager.GetCurrentMap() == 8) {
+            // Barracks: clear animated flags on several model slots
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 11 + 0x88 + BMD_FIELD_SHIFT) = 0;
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 12 + 0x88 + BMD_FIELD_SHIFT) = 0;
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 13 + 0x88 + BMD_FIELD_SHIFT) = 0;
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 73 + 0x88 + BMD_FIELD_SHIFT) = 0;
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 75 + 0x88 + BMD_FIELD_SHIFT) = 0;
+            *(BYTE *)(ModelsBase + BMD_STRIDE * 79 + 0x88 + BMD_FIELD_SHIFT) = 0;
+        }
+    }
+
+    if (InGameModeFlag != '\0') {
+        g_tex_ext_mode = cVar2;
+    }
+}
+#endif // disabled alternate Map_LoadObjectModels port

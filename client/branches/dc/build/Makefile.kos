@@ -1,0 +1,101 @@
+# Mu-Linux 0.97 client - KallistiOS (Dreamcast) build.
+#
+# Usage (from this directory -- branches\dc\build):
+#   build-dc.cmd                  # or plain: mingw32-make -f Makefile.kos
+#   make -f Makefile.kos          # builds mu.elf
+#   make -f Makefile.kos run      # pushes to a DC via dc-tool (KOS_LOADER)
+#   make -f Makefile.kos dist     # stripped binary
+#
+# This directory is a scratch build tree (like branches\test\build):
+#   src    -> junction to ..\src (the worktree; own git repo)
+#   lib    -> junction to ..\..\..\lib (client\lib)
+#   cmake  -> junction to ..\..\..\cmake
+#   Makefile.kos (this file)      # objects land in obj/ (not in the source tree)
+#
+# The build uses DreamSDK's KOS rather than the parent cmake presets; KOS
+# itself is required to exist at KOS_BASE below (or override with an env var).
+KOS_BASE ?= C:/games/DreamSDK/opt/toolchains/dc/kos
+KOS_PORTS ?= C:/games/DreamSDK/opt/toolchains/dc/kos-ports
+export KOS_BASE KOS_PORTS
+# Fallback: if the KOS wrappers are not on PATH (e.g. building from plain Windows
+# make instead of the DreamSDK shell), use the ones bundled in the tree.
+ifeq ($(OS),Windows_NT)
+PATH := $(KOS_BASE)/utils/build_wrappers;$(PATH)
+else
+PATH := $(KOS_BASE)/utils/build_wrappers:$(PATH)
+endif
+export PATH
+
+TARGET = mu.elf
+
+# --- Sources ---------------------------------------------------------------
+# Everything under src/ except the PC backends and the HarfBuzz shaper.
+#   - Platform/Win32, Platform/SDL3, Platform/GL: PC backends (DC uses Platform/Dreamcast)
+#   - Render/Backend/GL, Render/Backend/WebGPU: real GL 3.3 / WebGPU backends (DC: Render/Backend/DC stubs)
+#   - Text/TextShaper.cpp: HarfBuzz shaping (DC builds the trivial FontStack in Platform/Dreamcast/DCFont.cpp)
+#   - Platform/GLFunctions.cpp: glad loader (no GL on DC)
+SRC_DIRS := \
+    . Combat Config Core Debug Entity Game Input Item Local Math Model Monster \
+    Net Net/Protocol Net/Recv Party Path Physics Scene Sound Terrain Text Trade UI Util \
+    Platform Platform/Dreamcast Render Render/Backend Render/Backend/DC Render/Texture
+SRCS := $(foreach d,$(SRC_DIRS),$(wildcard src/$(d)/*.cpp) $(wildcard src/$(d)/*.c))
+# GameGuard_Packet.cpp only contains the MuEmu crypto key loaders + a no-op
+# handler; it is not the GameGuard anti-tamper. The rest stays out of the DC build.
+SRCS += src/GameGuard/GameGuard_Packet.cpp
+SRCS := $(filter-out src/Text/TextShaper.cpp src/Platform/GLFunctions.cpp,$(SRCS))
+# DCPVR.cpp replaces the scaffold DCRenderStubs.cpp: both define the same
+# GL-named backend symbols, so keep exactly one in the link.
+SRCS := $(filter-out src/Render/Backend/DC/DCRenderStubs.cpp,$(SRCS))
+# Text/*.c are C files and need kos-cc semantics; they are picked up above.
+# Place objects under obj/ mirroring the source layout, so git checkouts never
+# leave stale .o files next to sources (that caused mixed old/new link errors).
+OBJ_DIR := obj
+OBJS := $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(patsubst src/%.c,$(OBJ_DIR)/%.o,$(SRCS)))
+
+# Pattern rules must come BEFORE KOS Makefile.rules so ours win.
+$(OBJ_DIR)/%.o: src/%.cpp
+	@mkdir -p "$(dir $@)" "$(dir $(KOS_DEPDIR)/$(patsubst $(OBJ_DIR)/%.o,%.md,$@))"
+	kos-c++ $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ -MD -MF $(KOS_DEPDIR)/$(patsubst $(OBJ_DIR)/%.o,%.md,$@)
+$(OBJ_DIR)/%.o: src/%.c
+	@mkdir -p "$(dir $@)" "$(dir $(KOS_DEPDIR)/$(patsubst $(OBJ_DIR)/%.o,%.md,$@))"
+	kos-cc $(CFLAGS) $(CPPFLAGS) -c $< -o $@ -MD -MF $(KOS_DEPDIR)/$(patsubst $(OBJ_DIR)/%.o,%.md,$@)
+# lib/ (utf8proc, libunibreak, miniaudio, stb) was copied next to src/ so the
+# ../../lib relative includes in Text/* resolve from this branch.
+
+
+# --- Flags -----------------------------------------------------------------
+# MU_SDL_FONTS keeps the portable font path (on DC it binds to DCFont).
+# -D__DREAMCAST__ is pinned here explicitly; normally it comes from environ.sh
+# but the build must not depend on sourcing the KOS shell.
+CPPFLAGS += -I src -DMU_SDL_FONTS -fno-strict-aliasing -std=gnu++17 -D__DREAMCAST__
+CFLAGS   += -std=gnu17 -D__DREAMCAST__
+
+# Do NOT use KOS_ROMDISK_DIR for the game data - it is ~230 MB (GD-ROM/ISO9660).
+# A tiny boot romdisk can be added later if needed.
+# KOS_ROMDISK_DIR = romdisk (intentionally unused)
+
+# Route the .md dependency files KOS generates into .build/ so the source
+# tree is not polluted; clean removes the dir.
+KOS_DEPDIR ?= .build
+$(shell mkdir -p "$(KOS_DEPDIR)")
+export KOS_DEPDIR
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	kos-c++ -o $@ $(OBJS)
+
+# Push to a Dreamcast running the loader (dc-tool-ip/ser):
+run: $(TARGET)
+	$(KOS_LOADER) $(TARGET)
+
+dist: $(TARGET)
+	$(KOS_STRIP) -o mu-striped.elf $(TARGET)
+
+include $(KOS_BASE)/Makefile.rules
+
+clean:
+	rm -rf "$(OBJ_DIR)" $(TARGET) mu-striped.elf
+	rm -rf "$(KOS_DEPDIR)"
+
+.PHONY: all clean run dist

@@ -1,0 +1,8 @@
+# KOS build artifacts (make -f ../Makefile.kos clean removes them too)
+*.o
+mu.elf
+mu-striped.elf
+../.build/
+.build/
+mu-striped.elf
+

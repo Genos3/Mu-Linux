@@ -1,0 +1,435 @@
+#pragma once
+#include "Item/ItemDefines.h"
+#include "Item/ItemTypes.h"
+#include <cstdint>
+#include <cstddef>
+// structs.h — Game type definitions for Mu Online 0.97k reconstruction.
+// Derived from the DLL injector source (same version, same binary).
+// Includes: constants (Defines), enums, and game structs.
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+#define DWORD_MAX 4294967295UL
+
+/* Viewport */
+#define MAX_MAIN_VIEWPORT   400
+
+/* Terrain */
+#define TERRAIN_SCALE       100.0f
+#define TERRAIN_SIZE        256
+#define TERRAIN_SIZE_MASK   255
+
+/* OpenGL color packing */
+#define Color3b(r,g,b)    (((b)<<16)+((g)<<8)+(r))
+#define Color4b(r,g,b,a)  (((a)<<24)+((b)<<16)+((g)<<8)+(r))
+
+/* Item */
+#define MAX_ITEM_TYPE       32
+#define MAX_ITEM_SECTION    16
+#define MAX_ITEM            (MAX_ITEM_SECTION * MAX_ITEM_TYPE)
+constexpr int ITEM_BASE_MODEL = ITEM_MODEL_BASE;
+#define GET_ITEM(x,y)       (((x)*MAX_ITEM_TYPE)+(y))
+#define GET_ITEM_MODEL(x,y) (GET_ITEM(x,y)+ITEM_BASE_MODEL)
+#define MAX_SPECIAL_OPTION  9
+#define MAX_ITEM_PRICE      2000000000
+
+#define INVENTORY_WEAR_SIZE     12
+#define INVENTORY_COLUMN_SIZE   8
+#define INVENTORY_ROW_SIZE      8
+#define INVENTORY_ITEM_SIZE     (INVENTORY_COLUMN_SIZE * INVENTORY_ROW_SIZE)
+#define INVENTORY_MAX_SIZE      (INVENTORY_WEAR_SIZE + INVENTORY_ITEM_SIZE)
+
+#define GET_ITEM_OPT_LEVEL(x)   (((x) >> 3) & 0xF)
+#define GET_ITEM_OPT_SKILL(x)   (((x) >> 7) & 1)
+#define GET_ITEM_OPT_LUCK(x)    (((x) >> 2) & 1)
+#define GET_ITEM_OPT_OPT(x,y)  (((x) & 3) + (((y) & 64) >> 4))
+#define GET_ITEM_OPT_EXC(x)     ((x) & 0x3F)
+
+/* Character / Monster */
+#define MAX_CLASS               4
+#define MAX_RESISTANCE          4
+#define MAX_CHARACTER_LEVEL     1000
+#define MAX_CHARACTER_ZEN       2000000000
+#define MONSTER_BASE_MODEL      270
+#define MAX_MONSTER             256
+
+/* Textures / Models */
+#define MAX_TEXTURE         5500
+#define PLUS_TEXTURE        5500
+#define TOTAL_TEXTURE       (MAX_TEXTURE + PLUS_TEXTURE)
+#define MAX_MODELS          963
+#define PLUS_MODELS         256
+#define TOTAL_MODELS        (MAX_MODELS + PLUS_MODELS)
+#define MAX_BITMAP_FILE_NAME 32
+
+/* Maps */
+#define MAX_MAPS    32
+#define MAX_GATES   100
+
+/* Server list */
+#define MAX_SERVER_HI   25
+#define MAX_SERVER_LO   20
+
+/* Sound */
+#define MAX_SOUND_LEVEL 9
+#define MAX_MUSIC_LEVEL 9
+
+/* Buffs */
+#define FindEffect(x,y) ((((x)&(y))==(y))?1:0)
+#define AddEffect(x,y)  ((x)|=(y))
+#define DelEffect(x,y)  ((x)&=~(y))
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum eSceneFlags
+{
+    NON_SCENE       = 0,
+    WEBZEN_SCENE    = 1,  // SceneFlag 1 = Intro
+    LOG_IN_SCENE    = 2,  // SceneFlag 2 = Login
+    LOADING_SCENE   = 3,  // SceneFlag 3 = Loading
+    CHARACTER_SCENE = 4,  // SceneFlag 4 = CharSelect
+    MAIN_SCENE      = 5   // SceneFlag 5 = InGame
+};
+
+enum eMapNumber
+{
+    MAP_LORENCIA      = 0,
+    MAP_DUNGEON       = 1,
+    MAP_DEVIAS        = 2,
+    MAP_NORIA         = 3,
+    MAP_LOST_TOWER    = 4,
+    MAP_EXILE         = 5,
+    MAP_ARENA         = 6,
+    MAP_ATLANS        = 7,
+    MAP_TARKAN        = 8,
+    MAP_DEVIL_SQUARE1 = 9,
+    MAP_ICARUS        = 10,
+    MAP_BLOOD_CASTLE1 = 11,
+    MAP_BLOOD_CASTLE2 = 12,
+    MAP_BLOOD_CASTLE3 = 13,
+    MAP_BLOOD_CASTLE4 = 14,
+    MAP_BLOOD_CASTLE5 = 15,
+    MAP_BLOOD_CASTLE6 = 16
+};
+
+enum eClasses
+{
+    CLASS_DARK_WIZARD    = 0,
+    CLASS_DARK_KNIGHT    = 1,
+    CLASS_FAIRY_ELF      = 2,
+    CLASS_MAGIC_GLADIATOR = 3
+};
+
+enum ePkLevel
+{
+    PKLVL_FULLHERO  = 1,
+    PKLVL_HERO      = 2,
+    PKLVL_COMMONER  = 3,
+    PKLVL_WARNING   = 4,
+    PKLVL_OUTLAW    = 5,
+    PKLVL_KILLER    = 6
+};
+
+enum eSkillNumber
+{
+    SKILL_NONE              = 0,
+    SKILL_POISON            = 1,
+    SKILL_METEORITE         = 2,
+    SKILL_LIGHTNING         = 3,
+    SKILL_FIRE_BALL         = 4,
+    SKILL_FLAME             = 5,
+    SKILL_TELEPORT          = 6,
+    SKILL_ICE               = 7,
+    SKILL_TWISTER           = 8,
+    SKILL_EVIL_SPIRIT       = 9,
+    SKILL_HELL_FIRE         = 10,
+    SKILL_POWER_WAVE        = 11,
+    SKILL_AQUA_BEAM         = 12,
+    SKILL_BLAST             = 13,
+    SKILL_INFERNO           = 14,
+    SKILL_TELEPORT_ALLY     = 15,
+    SKILL_MANA_SHIELD       = 16,
+    SKILL_ENERGY_BALL       = 17,
+    SKILL_DEFENSE           = 18,
+    SKILL_FALLING_SLASH     = 19,
+    SKILL_LUNGE             = 20,
+    SKILL_UPPERCUT          = 21,
+    SKILL_CYCLONE           = 22,
+    SKILL_SLASH             = 23,
+    SKILL_TRIPLE_SHOT       = 24,
+    SKILL_HEAL              = 26,
+    SKILL_GREATER_DEFENSE   = 27,
+    SKILL_GREATER_DAMAGE    = 28,
+    SKILL_SUMMON1           = 30,
+    SKILL_SUMMON2           = 31,
+    SKILL_SUMMON3           = 32,
+    SKILL_SUMMON4           = 33,
+    SKILL_SUMMON5           = 34,
+    SKILL_SUMMON6           = 35,
+    SKILL_SUMMON7           = 36,
+    SKILL_TWISTING_SLASH    = 41,
+    SKILL_RAGEFUL_BLOW      = 42,
+    SKILL_DEATH_STAB        = 43,
+    SKILL_IMPALE            = 47,
+    SKILL_GREATER_LIFE      = 48,
+    SKILL_FIRE_BREATH       = 49,
+    SKILL_MONSTER_AREA_ATTACK = 50,
+    SKILL_ICE_ARROW         = 51,
+    SKILL_PENETRATION       = 52,
+    SKILL_FIRE_SLASH        = 55,
+    SKILL_POWER_SLASH       = 56
+};
+
+enum eEffectState
+{
+    STATE_POISON              = 0x0001,
+    STATE_FREEZE              = 0x0002,
+    STATE_ATTACK              = 0x0004,
+    STATE_DEFENSE             = 0x0008,
+    STATE_ADD_LIFE            = 0x0010,
+    STATE_HARDEN              = 0x0020,
+    STATE_REDUCE_DEFENSE      = 0x0040,
+    STATE_REDUCE_ATTACKDAMAGE = 0x0080,
+    STATE_REDUCE_MAGICDEFENSE = 0x0100,
+    STATE_REDUCE_MAGICPOWER   = 0x0200
+};
+
+enum eEquipment
+{
+    EQUIPMENT_WEAPON_RIGHT = 0,
+    EQUIPMENT_WEAPON_LEFT  = 1,
+    EQUIPMENT_HELM         = 2,
+    EQUIPMENT_ARMOR        = 3,
+    EQUIPMENT_PANTS        = 4,
+    EQUIPMENT_GLOVES       = 5,
+    EQUIPMENT_BOOTS        = 6,
+    EQUIPMENT_WING         = 7,
+    EQUIPMENT_HELPER       = 8,
+    EQUIPMENT_AMULET       = 9,
+    EQUIPMENT_RING_RIGHT   = 10,
+    EQUIPMENT_RING_LEFT    = 11
+};
+
+enum eTextAligns
+{
+    RT3_SORT_LEFT   = 0,
+    RT3_SORT_CENTER = 1
+};
+
+
+// ── Game Structs ──────────────────────────────────────────────────────────────
+
+// Acceso tipado a un item que el código heredado guarda como entero o puntero a byte.
+inline ITEM* AsItem(uintptr_t p) { return reinterpret_cast<ITEM*>(p); }
+inline ITEM* AsItem(void* p) { return static_cast<ITEM*>(p); }
+inline const ITEM* AsItem(const void* p) { return static_cast<const ITEM*>(p); }
+
+// IDA: ITEM_t, 0x204 bytes; items en el suelo, pool de 1000 en GroundItemPool.
+// Mismo struct que en MU 5.2 (_struct.h). CreateItem (handler 0x20) escribe
+// Item.Type/Level/Durability/Option1 y Object.
+struct ITEM_t {
+    short  Key;          // 0x000
+    BYTE   _unk002[2];
+    ITEM   Item;         // 0x004
+    OBJECT Object;       // 0x048
+};
+#if UINTPTR_MAX == 0xFFFFFFFFu
+static_assert(sizeof(ITEM_t) == 0x204, "ITEM_t");
+static_assert(offsetof(ITEM_t, Item) == 0x004, "ITEM_t::Item");
+static_assert(offsetof(ITEM_t, Object) == 0x048, "ITEM_t::Object");
+#endif
+inline ITEM_t* AsGroundItem(uintptr_t p) { return reinterpret_cast<ITEM_t*>(p); }
+inline ITEM_t* AsGroundItem(void* p) { return static_cast<ITEM_t*>(p); }
+inline const ITEM_t* AsGroundItem(const void* p) { return static_cast<const ITEM_t*>(p); }
+
+struct ITEM_ATTRIBUTE  // size = 64
+{
+    /*+00*/ char  Name[30];
+    /*+30*/ bool  TwoHand;
+    /*+31*/ std::uint8_t  Level;
+    /*+32*/ std::uint8_t  Width;
+    /*+33*/ std::uint8_t  Height;
+    /*+34*/ std::uint8_t  DamageMin;
+    /*+35*/ std::uint8_t  DamageMax;
+    /*+36*/ std::uint8_t  DefenseRate;
+    /*+37*/ std::uint8_t  Defense;
+    /*+38*/ std::uint8_t  MagicDefense;
+    /*+39*/ std::uint8_t  AttackSpeed;
+    /*+40*/ std::uint8_t  WalkSpeed;
+    /*+41*/ std::uint8_t  Durability;
+    /*+42*/ std::uint8_t  MagicDurability;
+    /*+43*/ std::uint8_t  MagicPower;
+    /*+44*/ std::uint16_t  RequireStrength;
+    /*+46*/ std::uint16_t  RequireAgility;
+    /*+48*/ std::uint8_t  RequireEnergy;
+    /*+49*/ std::uint8_t  RequireLevel;
+    /*+50*/ std::uint8_t  Value;
+    /*+52*/ std::int32_t   Money;
+    /*+56*/ std::uint8_t  RequireClass[MAX_CLASS];
+    /*+60*/ std::uint8_t  Resistance[MAX_RESISTANCE];
+};
+// IDA: Item_LoadBMD (0x0047B740): registros de 0x40 bytes tras BuxConvert.
+// TwoHand conserva bool y su representación 0/1 usada por el código de items.
+static_assert(sizeof(bool) == 1, "TwoHand ocupa un byte en item.bmd");
+static_assert(sizeof(ITEM_ATTRIBUTE) == 64, "Registro de item.bmd");
+static_assert(offsetof(ITEM_ATTRIBUTE, TwoHand) == 30, "item.bmd TwoHand");
+static_assert(offsetof(ITEM_ATTRIBUTE, RequireStrength) == 44, "item.bmd RequireStrength");
+static_assert(offsetof(ITEM_ATTRIBUTE, RequireEnergy) == 48, "item.bmd RequireEnergy");
+static_assert(offsetof(ITEM_ATTRIBUTE, Money) == 52, "item.bmd Money");
+static_assert(offsetof(ITEM_ATTRIBUTE, RequireClass) == 56, "item.bmd RequireClass");
+static_assert(offsetof(ITEM_ATTRIBUTE, Resistance) == 60, "item.bmd Resistance");
+
+
+struct GATE_ATTRIBUTE
+{
+    std::uint8_t Flag;
+    std::uint8_t Map;
+    std::uint8_t StartX;
+    std::uint8_t StartY;
+    std::uint8_t EndX;
+    std::uint8_t EndY;
+    std::uint8_t Target;
+    std::uint8_t Direction;
+    std::uint8_t RequireLevel;
+};
+// IDA: Gate_LoadBMD (0x0047A4D0): registros de nueve bytes tras BuxConvert.
+static_assert(sizeof(GATE_ATTRIBUTE) == 9, "Registro de gate.bmd");
+static_assert(offsetof(GATE_ATTRIBUTE, Target) == 6, "gate.bmd Target");
+static_assert(offsetof(GATE_ATTRIBUTE, RequireLevel) == 8, "gate.bmd RequireLevel");
+
+
+struct PARTY_t
+{
+    char  Name[11];
+    BYTE  number;
+    BYTE  map;
+    BYTE  x;
+    BYTE  y;
+    DWORD CurLife;
+    DWORD MaxLife;
+    BYTE  stepHP;
+    int   index;
+    DWORD state;
+};
+
+struct BITMAP_t
+{
+    char   FileName[MAX_BITMAP_FILE_NAME];
+    float  Width;
+    float  Height;
+    char   Components;
+    unsigned int TextureNumber;
+    BYTE   Ref;
+    BYTE  *Buffer;
+};
+
+static_assert(sizeof(BITMAP_t) == (sizeof(void*) == 4 ? 0x38 : 0x40), "BITMAP_t");
+
+struct MONSTER_ATTRIBUTE
+{
+    WORD Life;
+    WORD MoveSpeed;
+    WORD AttackSpeed;
+    WORD AttackDamageMin;
+    WORD AttackDamageMax;
+    WORD Defense;
+    WORD MagicDefense;
+    WORD AttackRating;
+    WORD SuccessfulBlocking;
+};
+
+struct MONSTER_SCRIPT
+{
+    BYTE Type;
+    char Name[32];
+    WORD Level;
+    MONSTER_ATTRIBUTE Attribute;
+};
+
+struct SERVER_t
+{
+    char  IP[20];
+    WORD  Port;
+    WORD  Index;
+    BYTE  Percent;
+};
+
+struct SERVER_LIST_t
+{
+    char     Name[20];
+    BYTE     Number;
+    bool     extServer;
+    SERVER_t Server[MAX_SERVER_LO];
+};
+
+// ── Named global aliases (from DLL Offsets.h) ─────────────────────────────────
+// These provide human-readable names for the DAT_ addresses in globals.h.
+// Access via the named macros; the underlying storage is the DAT_ variable.
+
+// Window / display: tamaño y escalas de layout en CWindow (Core/Window.h).
+// gWindow.GetScreenRateX/Y() son las únicas dos fuentes de escala de texto del
+// binario (IDA g_fScreenRate_x/y, 0041E0A0:144-145). El uso canónico es
+// `TextSize.cx /= gWindow.GetScreenRateX()` tras GetTextExtentPointA, que mide
+// en píxeles reales de ventana.
+
+// State
+// SceneFlag ya está declarado en stdafx.h; World en globals.h.
+
+// Character
+#define SocketStartupFirst  First             // IDA: First (0x055CA15C)
+// SelectedCharacter is a named global declared in globals.h.
+// IDA provenance: DAT_00559c50.
+
+// Camera / OpenGL — underlying storage is DWORD but the binary treats the
+// bit pattern as float. Use lvalue-float reinterpretation so assignments like
+// `CameraFOV = 45.0f` write the IEEE-754 bits (not an integer cast).
+#define CameraFOV           (*(float*)&CameraFOVStorage)
+#define CameraViewNear      (*(float*)&CameraViewNearStorage)
+#define CameraViewFar       (*(float*)&CameraViewFarStorage)
+#define EarthQuake          EarthQuakeStrength    // float
+
+// Connection: g_bGameServerConnected is declared in globals.h.
+#define ServerList          (*(SERVER_LIST_t(*)[MAX_SERVER_HI])&ServerListBuffer)
+// `ServerNumber` es un nombre INVENTADO del port y describe mal el
+// campo.  `0x083A7C40` es la **cantidad de servidores** que trajo el F4/02
+// (`ReceiveServerList` L15: `ServerListCount = ReceiveBuffer[5]`), y `Game_SceneUpdate`
+// lo pone en 0 al entrar al login.  Nadie lo LEE — se guarda y no se consume.
+//
+// El "numero de server" que decide con que nombre/color se dibuja cada rectangulo
+// del select-server es OTRA cosa: es `group = ServerCode / 20` (0..N), que indexa
+// la tabla de nombres `ServerNameTable` (stride 300) — ver `Recv_ServerList`.  El
+// grupo 12 es un caso especial: usa `GlobalText[559]` y va al slot 24.
+#define ServerNumber        ServerListCount  // alias historico, no usar en codigo nuevo
+
+// Models
+// Address of bone-scratch base, reinterpreted as an array of 3x4 bone matrices.
+#define BoneTransform       ((float(*)[3][4])&BoneScratchRoot)
+// g_BitmapsRaw es el array real (stride 0x38). LegacyBitmapTable es sólo el PRIMER DWORD
+// del slot[0], no el puntero — por eso indexamos sobre la dirección de g_BitmapsRaw.
+extern char* g_BitmapsRaw;
+#define Bitmaps             ((BITMAP_t*)&g_BitmapsRaw[0])
+
+// ── Companion-project aliases (IDA decompile compatibility) ──────────────────
+// Globals:
+// PrimaryTerrainLight es PrimaryTerrainLightStorage (el buffer que lee el render y que
+// `Terrain_Water` (0x4F95E0) resetea por frame), NO `Unknown32_07EAB250` (un DWORD
+// muerto). `AddTerrainLight` indexa `Buffer[768*y + 3*x]` con x,y hasta 255, asi
+// que el destino tiene que ser el array completo.
+#define PrimaryTerrainLight  ((float(*)[3])&PrimaryTerrainLightStorage[0])  // float[256*256][3]
+// Functions (map companion-project names → FUN_ addresses from functions.h):
+// El VectorRotate del binario es 0x4FA0B0 (row-major); NO confundirlo con
+// Vector_InverseRotate, el port de VectorIRotate (0x4FA110), que es la TRANSPUESTA:
+//     0x4FA0B0 VectorRotate   out[i] = m[4i+0]*x + m[4i+1]*y + m[4i+2]*z
+//     0x4FA110 VectorIRotate  out[i] = m[i]*x + m[4+i]*y + m[8+i]*z
+// Con el alias equivocado, todo offset calculado con VectorRotate rota por -yaw
+// (p.ej. el origen del Aqua Beam en sub_4451C0 queda espejado).
+#define VectorRotate         Vector_Rotate
+// `AddTerrainLight` NO es `AddTerrainLightClip`: son dos funciones del binario.
+//   AddTerrainLight     0x004F76C0  sin clamp superior  · decenas de callers
+//   AddTerrainLightClip 0x004F7800  clampea a 1.0       · UN caller (0x4C0E59)
+// Con el clamp, la luz dinamica (fuego, antorchas, efectos) no llega a saturar.
+// El port de 0x4F76C0 es `AddTerrainLight` (Render/SMD_Parser.cpp).
+void __cdecl AddTerrainLight(float xf, float yf, float *Light, int Range, float *Buffer);   // decl local: structs.h no incluye functions.h
+#define CreateBomb           Effect_SpawnSmokeBurst
+#define AddTerrainAttributeRange Terrain_UpdateTileAttributeRect
+#define AddTerrainAttribute      Terrain_SetTileAttributeBits
+#define RenderBitmap         GL_DrawTexture
