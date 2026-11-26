@@ -19,7 +19,6 @@
 #include "Render/WorldEffects.h"
 #include "Render/Particle_Render.h"
 
-void Sprite_ReplayStep();
 void Fauna_TickSprites();
 void EffectPool_TickRenderState();
 
@@ -270,7 +269,6 @@ void Simulation_BeginRender()
         ApplyPose(camera);
     { RenderProfile::InterpolationScope measured(RenderProfile::InterpolationWork::Apply);
       RenderInterpolation_Begin(TimeRemain); }
-    Sprite_ReplayStep();
 }
 
 void Simulation_EndRender()

@@ -3,8 +3,10 @@
 // BMD__RenderMeshTranslate y RenderObjectScreen (ítems 3D de las grillas).
 
 #include "stdafx.h"
+#include <cstdlib>
 #include "Model/ModelTypes.h"
 #include "Render/BufferedDraw.h"
+#include "Config/UserSettings.h"
 #include "Render/MeshDraw.h"
 #include "Render/BMDDevice.h"
 #include "Render/LooseWingVisuals.h"
@@ -58,6 +60,8 @@ void __cdecl BMD__RenderMeshTranslate(void *model, char a, int b, float frame, i
     if (!model) return;
 
     auto* bmd = AsModel(model);
+    const int modelIndex = (int)(((uintptr_t)model - (uintptr_t)ModelsBase) / sizeof(BMD));
+    const bool debugFace = (modelIndex == 0x3c) && gUserSettings.GetDebugMaterials();
     const int meshIdx  = (int)frame;
     const auto* mesh = reinterpret_cast<const ClothModelMesh*>(bmd->Meshs) + meshIdx;
     if (mesh->TriangleCount == 0) return;             // sin triangulos
@@ -103,7 +107,10 @@ void __cdecl BMD__RenderMeshTranslate(void *model, char a, int b, float frame, i
     // emiten texcoords (2) o no (1, 64).
     const int fl = flags & 0xFF;
     int mode;
-    if ((fl & 1) == 1) {
+    if (debugFace) {
+        mode = 1;
+        BMDDevice::SelectDebugVertexColor(fl);
+    } else if ((fl & 1) == 1) {
         mode = 1;
         BMDDevice::Select({BMDDevice::Pass::ColorAnimated,static_cast<unsigned>(fl)});
         BufferedDraw::Color3fv(bodyLight);
@@ -135,6 +142,14 @@ void __cdecl BMD__RenderMeshTranslate(void *model, char a, int b, float frame, i
     for (int poly = 0; poly < polyCount; ++poly) {
         const char *tri = reinterpret_cast<const char*>(mesh->Triangles + poly * sizeof(ModelRuntimeTriangle));
         const int nv = *tri;
+        if (debugFace) {
+            static const float palette[10][3] = {
+                {1,0,0},{0,1,0},{0,0,1},{1,1,0},{0,1,1},
+                {1,0,1},{1,0.5f,0},{0.5f,0,1},{0,0.5f,0.5f},{0.5f,0.5f,0.5f}};
+            const float* c = palette[meshIdx % 10];
+            float b = 0.55f + 0.45f * (((unsigned)(poly * 37u)) & 0xff) / 255.0f;
+            BufferedDraw::Color3f(c[0] * b, c[1] * b, c[2] * b);
+        }
         const short *idx = (const short *)(tri + 10);
         for (int vi = 0; vi < nv; ++vi, ++idx) {
             const int vtx = idx[-4];                          // indice de vertice

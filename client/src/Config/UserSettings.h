@@ -103,6 +103,8 @@ public:
     // [Window] GraphicsValidation=1: Dawn valida cada comando también en
     // Release (para diagnosticar errores de render). Sólo se lee del archivo.
     bool GetGraphicsValidation() const { return m_GraphicsValidation; }
+    // [Debug] DebugMaterials=1: untextured per-mesh material viewer.
+    bool GetDebugMaterials() const { return m_DebugMaterials; }
     RenderBackendPreference GetRenderBackend() const { return m_RenderBackend; }
     // La preferencia con la que arrancó el cliente (el backend en uso).
     RenderBackendPreference GetStartupRenderBackend() const { return m_StartupRenderBackend; }
@@ -206,6 +208,7 @@ private:
     int  m_FpsLimit = 60;
     bool m_VSync = false;
     bool m_GraphicsValidation = false;
+    bool m_DebugMaterials = false;
     RenderBackendPreference m_RenderBackend = RenderBackendPreference::OpenGL;
     RenderBackendPreference m_StartupRenderBackend = RenderBackendPreference::OpenGL;
     int m_TextureQuality = 0, m_StartupTextureQuality = 0;

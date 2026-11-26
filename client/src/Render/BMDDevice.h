@@ -8,6 +8,9 @@ struct PassState { Pass pass;unsigned flags=0;int textureSlot=0;bool alpha=false
 bool Enabled();
 const char* Status();
 void Select(const PassState& state);
+// Debug material viewer: legacy vertex-colour path (same as DC/PVR where the
+// material system is disabled), so per-face Color3f() calls are visible.
+void SelectDebugVertexColor(unsigned flags);
 void BeginModel();
 void EndModel();
 class MeshScope {

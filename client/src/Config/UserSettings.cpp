@@ -94,6 +94,7 @@ void CUserSettings::Load(const char* iniPath)
     m_RenderDecoupled = ReadRange("Window", "RenderDecoupled", iniPath, 0, 1, 1) != 0;
     m_VSync = ReadRange("Window", "VSync", iniPath, 0, 1, 0) != 0;
     m_GraphicsValidation = ReadRange("Window", "GraphicsValidation", iniPath, 0, 1, 0) != 0;
+    m_DebugMaterials = ReadRange("Debug", "DebugMaterials", iniPath, 0, 1, 0) != 0;
     char backend[16] = {};
     Platform::GetFileSystem().ReadIniString("Window", "RenderBackend", "opengl", backend, sizeof(backend), iniPath);
     for (int i = 0; i < static_cast<int>(RenderBackendPreference::Count); ++i)

@@ -1,0 +1,11 @@
+# Generated build artifacts and junctions (not real content)
+bin/
+build/
+cmake
+lib
+src
+tests
+*.elf
+*.cdi
+*.log
+*.dmp

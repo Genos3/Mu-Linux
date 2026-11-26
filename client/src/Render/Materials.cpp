@@ -177,6 +177,12 @@ void ReferenceSurface(unsigned flags,bool alpha,bool chrome=false){
 }
 bool Enabled(){return Materials::Enabled();}
 const char* Status(){return Enabled()?"BMD: materiales":"BMD: referencia";}
+void SelectDebugVertexColor(unsigned flags){
+    // Force the reference path used by the DC port: legacy state, no material
+    // colour override, so BufferedDraw::Color3f per-face values show through.
+    ReferenceSurface(flags,false);
+    GL_SetAlphaTest('\0');
+}
 void Select(const PassState& s){
     using P=Pass;
     switch(s.pass){

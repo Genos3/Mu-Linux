@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstdlib>
 // BMD_DrawMesh.cpp
 // BMD__RenderMesh @ 0x00440D50  [Kayito: unnamed; S6 equivalent = BMD::RenderMesh]
 //
@@ -73,6 +74,7 @@
 
 #include "stdafx.h"
 #include "Render/BufferedDraw.h"
+#include "Config/UserSettings.h"
 #include "Render/MeshDraw.h"
 #include <cstring>
 #include "Render/BMDDevice.h"
@@ -157,6 +159,9 @@ void __cdecl BMD__RenderMesh(void *bmd_obj, float meshIdx, int flags,
     // modelos así.  Los modelos vanilla no pasan por acá.
     const int model = (int)(((uintptr_t)bmd_obj - (uintptr_t)ModelsBase) / sizeof(BMD));
     const bool twoSidedMesh=model >= MODEL_MAX_VANILLA && gContentCatalog.IsTwoSidedMesh(model,meshIndex);
+    // Material viewer: MU_SHIP_FACES=1 renders login ships untextured, hue = mesh index,
+    // brightness = face index. Same mode as the DC port for side-by-side comparison.
+    const bool debugFace = (model == 0x3c) && gUserSettings.GetDebugMaterials();
     // DESVIACION R4n: el ámbito mantiene dos caras durante todos los materiales
     // y recupera culling/caché coherentes al salir, también en retornos tempranos.
     const BMDDevice::MeshScope meshCull(twoSidedMesh);
@@ -257,7 +262,10 @@ void __cdecl BMD__RenderMesh(void *bmd_obj, float meshIdx, int flags,
         ((int)(((uintptr_t)bmd_obj - (uintptr_t)ModelsBase) / sizeof(BMD)) >= MODEL_MAX_VANILLA) &&
         mesh->TextureFlags != 0 && static_cast<const char*>(mesh->TextureFlags)[0] != 0;
 
-    if ((bVar4 & 1) == 1) {
+    if (debugFace) {
+        renderMode = MODE_COLOR;
+        BMDDevice::SelectDebugVertexColor(uVar6);
+    } else if ((bVar4 & 1) == 1) {
         // RENDER_COLOR: flat color, disable texture
         renderMode = MODE_COLOR;
         const bool colorAlpha=alpha < AlphaChannelThreshold;
@@ -479,7 +487,7 @@ void __cdecl BMD__RenderMesh(void *bmd_obj, float meshIdx, int flags,
         // borde entero -- no solo las esquinas -- llega a cero.
         flashRadius = sqrtf(flashRadius) * 0.70710678f;
     }
-    if (!thunderFlash && MeshDraw::Draw(meshInput)) {
+    if (!debugFace && !thunderFlash && MeshDraw::Draw(meshInput)) {
         BMDDevice::Select({BMDDevice::Pass::Exit});
         return;
     }
@@ -495,6 +503,15 @@ void __cdecl BMD__RenderMesh(void *bmd_obj, float meshIdx, int flags,
             pcVar13 = reinterpret_cast<char*>(mesh->Triangles + faceOffset);
             iVar12 = 0;
             if ('\0' < *pcVar13) {
+                if (debugFace) {
+                    static const float palette[10][3] = {
+                        {1,0,0},{0,1,0},{0,0,1},{1,1,0},{0,1,1},
+                        {1,0,1},{1,0.5f,0},{0.5f,0,1},{0,0.5f,0.5f},{0.5f,0.5f,0.5f}};
+                    const float* c = palette[meshIndex % 10];
+                    float b = 0.55f + 0.45f * (((unsigned)(faceOffset * 37u)) & 0xff) / 255.0f;
+                    BufferedDraw::NativeColor(c[0] * b, c[1] * b, c[2] * b, 1.0f);
+                    BufferedDraw::Color3f(c[0] * b, c[1] * b, c[2] * b);
+                }
                 psVar14 = (short *)(pcVar13 + 10);
                 do {
                     sVar3 = psVar14[-4];  // bone/position index

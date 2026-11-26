@@ -42,7 +42,7 @@
 #include "Config/UserSettings.h"
 #include "Render/MaterialVisuals.h"
 static void Game_TickAmbientAudio();
-void Sprite_CaptureStep();
+void Sprite_ClearStep();
 void Chat_TickPresentation();
 void HUD_TickGridPresentation();
 void ItemNames_TickInput();
@@ -127,6 +127,9 @@ void __cdecl Game_MainLoop(HDC param_1)
     int simulationSteps=0;
     while (TimeRemain > 0x27 && simulationSteps<5) {
         ++simulationSteps;
+        // Start of SIM step: drop sprites left over from the previous step.
+        // The renderer no longer consumes them, so they survive render-only frames.
+        Sprite_ClearStep();
         // DESVIACION: capturas externas por paso, también al recuperar demoras.
         RenderSnapshots_BeginStep();
 
@@ -232,7 +235,6 @@ void __cdecl Game_MainLoop(HDC param_1)
         HUD_TickGridPresentation();
         ItemNames_TickInput();
         Game_TickAmbientAudio();
-        Sprite_CaptureStep();
         RenderSnapshots_EndStep();
         // IDA: Scene_Dispatch limpiaba Enter después del frame ligado a SIM.
         // DESVIACION: consumirlo una sola vez por paso, no por draw desacoplado.

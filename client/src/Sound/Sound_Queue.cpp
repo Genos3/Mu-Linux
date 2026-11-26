@@ -10,33 +10,13 @@
 #include "Game/RenderInterpolation.h"
 #include "Config/UserSettings.h"
 
-namespace {
-char simulationSprites[sizeof(EffectPoolArray)] = {};
-}
-// DESVIACION: conservar sprites efímeros creados durante cada paso SIM.
-// Su consumo por el render no borra la muestra para los renders sin paso.
-void Sprite_CaptureStep() {
-    memcpy(simulationSprites, EffectPoolArray, sizeof(simulationSprites));
+// Sprites stay in EffectPoolArray across render-only frames: the renderer no
+// longer consumes them (the original client drew once per simulation tick, so
+// it could afford to clear on draw). Clear stale slots once at the start of
+// each simulation step instead. This removes the 435 KB simulationSprites
+// snapshot that existed only to bridge 25 fps SIM to 60 fps render.
+void Sprite_ClearStep() {
     for (int i = 0; i < kSpritePoolSize; ++i) EffectPoolArray[i * OBJECT_STRIDE] = 0;
-}
-void Sprite_ReplayStep() {
-    int destination = 0;
-    for (int i = 0; i < kSpritePoolSize; ++i) {
-        const char *sample = simulationSprites + i * OBJECT_STRIDE;
-        if (!sample[0]) continue;
-        while (destination < kSpritePoolSize && EffectPoolArray[destination * OBJECT_STRIDE]) ++destination;
-        if (destination == kSpritePoolSize) break;
-        char *out=EffectPoolArray+destination++*OBJECT_STRIDE;
-        memcpy(out,sample,OBJECT_STRIDE);
-        // El sprite efímero conserva su alta/azar; sólo acompaña la traslación
-        // visual de su dueño conocido. No se inventa identidad entre emisiones.
-        float offset[3];
-        if (RenderInterpolation_OwnerOffset(*(void **)(out+0xfc),offset))
-            for (int axis=0;axis<3;++axis) {
-                *(float *)(out+0x10+4*axis)+=offset[axis];
-                *(float *)(out+EntityOffset(0x170)+4*axis)+=offset[axis];
-            }
-    }
 }
 
 // Render_DrawSpritePool = RenderSprites. Recorre el effect pool
@@ -58,7 +38,6 @@ void __cdecl Render_DrawSpritePool(void)
             else if (blend == 1) GL_SetBlendSrcAlpha();
             else if (blend == 2) GL_SetBlendSrcOver('\x01');
             Render_DrawSprite(AsObject(pcVar2));
-            *pcVar2 = 0;
         }
     }
 }
