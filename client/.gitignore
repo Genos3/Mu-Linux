@@ -15,8 +15,9 @@ obj/
 
 # Las ramas de trabajo (/branches/) se versionan aqui, incluido el port de
 # Dreamcast. Los artefactos generados se ignoran en sus propios .gitignore.
-# /branches/lib es un junction compartido, no contenido de esta rama.
+# junctions compartidos: no son contenido de estas ramas.
 /branches/lib
+/branches/dc/lib
 # Backups del port: copias historicas del source, nunca se suben.
 /bkp/
 
