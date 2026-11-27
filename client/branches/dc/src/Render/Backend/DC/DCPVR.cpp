@@ -56,6 +56,7 @@ bool g_blend = false, g_alphaTest = false, g_textureEnabled = true;
 Gfx::Factor g_blendSrc = Gfx::Factor::SrcAlpha;
 Gfx::Factor g_blendDst = Gfx::Factor::OneMinusSrcAlpha;
 bool g_depthTest = true;   // game toggles this: 3D on, 2D UI off
+bool g_depthMask = true;   // glDepthMask(false) passes must still read depth
 float g_clear[4] = {0, 0, 0, 1};
 bool g_sceneOpen = false;
 
@@ -256,7 +257,8 @@ extern "C" bool DCPVR_LoadDT(const char* path, unsigned* outHandle, int* outW, i
 // --- GfxDevice -----------------------------------------------------------
 namespace GfxDevice { namespace GL {
 void Reset() {
-    g_bound = 0; g_blend = false; g_alphaTest = false; g_textureEnabled = true; g_depthTest = true;
+    g_bound = 0; g_blend = false; g_alphaTest = false; g_textureEnabled = true;
+    g_depthTest = true; g_depthMask = true;
     g_blendSrc = Gfx::Factor::SrcAlpha;
     g_blendDst = Gfx::Factor::OneMinusSrcAlpha;
 }
@@ -274,7 +276,7 @@ void ApplyBlend(Gfx::Factor source, Gfx::Factor destination)
     g_blend = !(source == Gfx::Factor::One && destination == Gfx::Factor::Zero);
 }
 void ApplyDepthFunc(Gfx::Compare) {}
-void ApplyDepthMask(bool) {}
+void ApplyDepthMask(bool write) { g_depthMask = write; }
 void ApplyTexture(Gfx::Texture texture) { g_bound = texture; }
 void ApplyViewport(int, int, int, int) {}
 void ClearColor(float r, float g, float b, float a)
@@ -464,7 +466,7 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
     cxt.depth.comparison = g_depthTest
         ? (translucent ? PVR_DEPTHCMP_GEQUAL : PVR_DEPTHCMP_GREATER)
         : PVR_DEPTHCMP_ALWAYS;
-    cxt.depth.write = g_depthTest;
+    cxt.depth.write = g_depthTest && g_depthMask;
     // Follow the same CullFace cap as the GL/WebGPU backends, but keep
     // alpha-blended geometry two-sided: semitransparent faces and flat rigging
     // (ropes/sails) must stay visible from both sides. The ship is a vanilla
