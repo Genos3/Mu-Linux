@@ -83,6 +83,7 @@
 #include "Render/SkillEffect_Render.h"
 #include "globals.h"
 #include "functions.h"
+#include <cmath>
 
 // SkillEffect_Render @ 0x0046CB70 (44 lines)
 // Renders all active skill effects. In sub-states 2/7/10 uses timer-driven mode;
@@ -123,6 +124,13 @@ void SkillEffect_Render(void)
         // IDA lee este campo como **DWORD**: `BindTexture(*((_DWORD *)v0 - 2))`.
         // Guarda un entero (el id de textura): leerlo como float y convertirlo
         // numéricamente da 0 → slot 0 (sin textura) → sprite blanco.
+        // A stale pool slot can carry garbage size/position; feeding NaN or
+        // enormous coordinates to the TA hangs the render. Skip those slots.
+        if (!std::isfinite(*pfVar1) || !std::isfinite(pfVar1[7]) ||
+            !std::isfinite(pfVar1[1]) || !std::isfinite(pfVar1[2]) || !std::isfinite(pfVar1[3]) ||
+            !std::isfinite(pfVar1[4]) || !std::isfinite(pfVar1[5]) || !std::isfinite(pfVar1[6]) ||
+            std::fabs(*pfVar1) > 1000.0f || std::fabs(pfVar1[7]) > 1000.0f)
+            continue;
         const int texId = *(int*)(pfVar1 - 2);
         GL_BindTextureSlot(texId);             // BindTexture
 

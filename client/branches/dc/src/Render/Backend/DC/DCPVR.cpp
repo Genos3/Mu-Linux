@@ -106,11 +106,6 @@ struct Batch {
     std::vector<pvr_vertex_t> verts;
 };
 std::vector<Batch> g_opaque, g_translucent;
-// Reuse small Batch objects across frames to cut per-frame allocation churn.
-// Bounded: retaining the large terrain buffers permanently OOMs the DC heap.
-constexpr std::size_t kPoolMaxBatches = 64;
-constexpr std::size_t kPoolMaxVerts = 256;
-std::vector<Batch> g_batchPool;
 bool s_wrapUv = false;   // set per Submit: wrap tile-space terrain UVs only
 void Emit(std::vector<pvr_vertex_t>& out, const float* xyz, const float* uv, uint32_t argb, bool eol)
 {
@@ -139,14 +134,10 @@ void FlushList(pvr_list_t list, std::vector<Batch>& batches)
         for (const pvr_vertex_t& v : batch.verts) pvr_prim(&v, sizeof(v));
     }
     pvr_list_finish();
-    // Recycle only small batches; large terrain buffers are freed instead of
-    // retained permanently (the DC heap cannot afford ~1.6 MB of pinned buffers).
-    while (!batches.empty()) {
-        Batch& b = batches.back();
-        if (g_batchPool.size() < kPoolMaxBatches && b.verts.capacity() <= kPoolMaxVerts)
-            g_batchPool.push_back(std::move(b));
-        batches.pop_back();   // frees the buffer unless it was moved into the pool
-    }
+    // Free the batch buffers every frame. A reuse pool corrupted the KOS heap
+    // (mutex assertion inside Submit's push_back during camera movement), so
+    // accept the per-frame allocation churn instead.
+    batches.clear();
 }
 } // namespace
 
@@ -409,6 +400,10 @@ void DrawIndexed(unsigned, unsigned, const Vertex*, std::size_t, std::size_t) {}
 void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
 {
     if (!vertices || count == 0) return;
+    if (count > 200000) {
+        Platform::DCLog("PVR BADCOUNT: %u vertices dropped", (unsigned)count);
+        return;
+    }
     DCPVR_SceneBegin();
 
     const Tex* tex = (g_textureEnabled && g_bound && g_bound <= kMaxTextures)
@@ -487,11 +482,6 @@ void Submit(unsigned mode, const Vertex* vertices, std::size_t count)
     }
 
     Batch batch;
-    if (!g_batchPool.empty()) {
-        batch = std::move(g_batchPool.back());
-        g_batchPool.pop_back();
-        batch.verts.clear();          // keep the allocated capacity
-    }
     batch.hdr = hdr;
 
     // The GL backend transforms vertices in its vertex shader; the DC backend

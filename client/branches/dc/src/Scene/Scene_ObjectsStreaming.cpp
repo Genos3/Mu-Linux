@@ -56,7 +56,7 @@ int cellOf(float x, float y) {
 
 void ObjectsStream_Init(const char* path) {
     ObjectsStream_Shutdown();
-    ModelRing_Init(1200 * 1024);   // bounded model cache for visible types
+    ModelRing_Init(2048 * 1024);   // preload every type used by this map
     FILE* f = Platform::GetFileSystem().Open(path, "rb");
     if (!f) { MU_TRACE("OBJSTREAM: open failed %s", path); return; }
     std::fseek(f, 0, SEEK_END);
@@ -98,6 +98,17 @@ void ObjectsStream_Init(const char* path) {
     std::memset(s_typeRefs, 0, sizeof(s_typeRefs));
     s_activeCount = 0; s_frame = 0;
     MU_TRACE("OBJSTREAM: %u objects, %u bytes, grid built", s_count, sz);
+
+    // Preload every type present in the map. Streaming then only creates
+    // instances; it never loads model data or textures mid-frame.
+    for (int t = 0; t < 160; ++t) {
+        bool present = false;
+        for (uint32_t i = 0; i < s_count; ++i) {
+            if ((int)rec(i).type == t) { present = true; break; }
+        }
+        if (present) ModelRing_Take(t);
+    }
+    MU_TRACE("OBJSTREAM: preload done");
 }
 
 void ObjectsStream_Shutdown() {
@@ -155,8 +166,16 @@ void ObjectsStream_Update(float camX, float camY) {
                 if (s_inst[i]) continue;
                 const Rec& r = rec(i);
                 const int type = static_cast<int>(r.type);
+                bool modelReady = true;
                 if (type >= 0 && type < 160 && s_typeRefs[type]++ == 0)
-                    ModelRing_Take(type);       // bounded cache: load/enable model
+                    modelReady = ModelRing_Take(type);   // bounded cache: load/enable model
+                if (!modelReady) {
+                    // Ring full / model failed to load: drop this record instead
+                    // of creating an instance that would render stale ring data.
+                    if (type >= 0 && type < 160 && --s_typeRefs[type] == 0)
+                        ModelRing_Release(type);
+                    continue;
+                }
                 void* obj = CreateObject(type,
                                          const_cast<float*>(r.pos),
                                          const_cast<float*>(r.tgt), r.scale);

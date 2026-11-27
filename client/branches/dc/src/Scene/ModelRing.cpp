@@ -102,7 +102,7 @@ void ModelRing_Init(unsigned capacityBytes) {
     s_capacity = Align4(capacityBytes);
     if (s_capacity < 64 * 1024) s_capacity = 64 * 1024;
     s_buf = new uint8_t[s_capacity];
-    if (!s_buf) { s_capacity = 0; return; }
+    if (!s_buf) { MU_TRACE("MODELRING: OOM allocating %u bytes", s_capacity); s_capacity = 0; return; }
     s_head = 0;
     s_headIdx = s_tailIdx = -1;
     std::memset(s_entries, 0, sizeof(s_entries));
@@ -202,6 +202,10 @@ static bool Serialize(int type, uint32_t offset, uint32_t& used) {
     }
 
     used = static_cast<uint32_t>(cursor - begin);
+    if (used > bytes) {
+        MU_TRACE("RING OVERFLOW: id=%d used=%u computed=%u", type, used, bytes);
+        return false;
+    }
     return true;
 }
 
@@ -224,17 +228,24 @@ bool ModelRing_Take(int type) {
     const uint32_t need = ModelBytes(m);
     const uint32_t offset = MakeRoom(need);
     if (offset == 0xFFFFFFFFu) {
-        MU_TRACE("MODELRING: full, cannot cache type %d (%u bytes)", type, need);
+        MU_TRACE("MODELRING: OOM full, cannot cache id %d (%u bytes of %u)",
+                 type, need, s_capacity);
         return false;
     }
+
     InvalidateRange(offset, need);
+
     uint32_t used = 0;
-    if (!Serialize(type, offset, used)) return false;
+    if (!Serialize(type, offset, used)) {
+        MU_TRACE("MODELRING: OOM serialize failed for id %d (%u bytes at %u)",
+                 type, need, offset);
+        return false;
+    }
     s_wasSerialized[type] = true;
     static int s_takeLog = 0;
     if (s_takeLog < 8) {
         ++s_takeLog;
-        MU_TRACE("MODELRING: cached type=%d bytes=%u used=%u/%u", type, need, used, s_capacity);
+        MU_TRACE("MODELRING: cached id=%d bytes=%u used=%u/%u", type, need, used, s_capacity);
     }
     e.type = static_cast<uint16_t>(type);
     e.enabled = 1;

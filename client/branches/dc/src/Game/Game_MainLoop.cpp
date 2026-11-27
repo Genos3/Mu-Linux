@@ -90,9 +90,8 @@ void ItemNames_TickInput();
 
 void __cdecl Game_MainLoop(HDC param_1)
 {
-    static int s_mlTraceFrame = 0;
-    int mlTrace = (s_mlTraceFrame < 3) ? s_mlTraceFrame : -1;
-    ++s_mlTraceFrame;
+    // Per-frame sim tracing is too noisy; keep the log focused on ring/OOM.
+    int mlTrace = -1;
 #define ML_TRACE(...) do { if (mlTrace >= 0) MU_TRACE("ML[%d]: " __VA_ARGS__, mlTrace); } while (0)
 
     ML_TRACE("enter (scene=%d)", SceneFlag);

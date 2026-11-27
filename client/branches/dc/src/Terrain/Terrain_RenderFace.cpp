@@ -55,6 +55,13 @@
 // the chroma while preserving brightness, the same way the legacy path does.
 static void TerrainVertexLight(int index, float* out)
 {
+    if (index < 0 || index >= 256 * 256) {
+        static int s_badIdx = 0;
+        if (s_badIdx++ < 8)
+            MU_TRACE("TLIGHT BADIDX: %d", index);
+        out[0] = out[1] = out[2] = 1.0f;
+        return;
+    }
     float r = TER_LIGHT[index][0], g = TER_LIGHT[index][1], b = TER_LIGHT[index][2];
     int zeros = (r == 0.0f) + (g == 0.0f) + (b == 0.0f);
     if (zeros >= 2) { out[0] = out[1] = out[2] = 0.85f; return; }

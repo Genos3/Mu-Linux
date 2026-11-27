@@ -28,6 +28,7 @@
 
 #include "stdafx.h"
 #include <cstdlib>
+#include <new>
 #include "Core/DataPrefetch.h"
 #include "Render/ResourceTables.h"
 #include "Platform/Diagnostics.h"
@@ -447,6 +448,13 @@ int main(int, char**)
     Quest_InitializeStaticState();
 
 #ifdef __DREAMCAST__
+    // Print a diagnostic before the CRT aborts on heap exhaustion. Without
+    // this an OOM looks like a silent hang, with only "arch: aborting" in the
+    // serial log. Abort directly so the handler cannot re-enter itself.
+    std::set_new_handler([]() {
+        Platform::DCLog("FATAL: heap exhausted (new failed, bad_alloc)");
+        std::abort();
+    });
     // Allocate terrain tables early while the heap is still contiguous. They
     // are large (768 KB each) and late lazy allocation during world load fails
     // with bad_alloc once the heap is fragmented.
